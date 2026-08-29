@@ -19,6 +19,8 @@ const notificationRoutes = require("./routes/notifications");
 
 const app = express();
 
+app.set('trust proxy', 1);  // add this line — required behind Render's reverse proxy
+
 connectDB();
 
 app.use(helmet());
