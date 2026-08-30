@@ -49,7 +49,7 @@ export default function App() {
 
   // Still loading a stored session — avoid flashing the landing page.
   if (status === "loading") {
-    return <div className="min-h-screen flex items-center justify-center bg-stone-50"><Spinner label="Loading DocMind AI…" /></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-slate-950"><Spinner label="Loading DocMind AI…" /></div>;
   }
 
   if (status === "guest") {
@@ -61,7 +61,7 @@ export default function App() {
   const openDoc = (id) => { setSelectedDocId(id); setPage("documentDetail"); };
 
   return (
-    <div className="min-h-screen bg-stone-50 font-sans text-slate-900 flex">
+    <div className="min-h-screen bg-stone-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 flex">
       <Sidebar
         page={page === "documentDetail" ? "documents" : page}
         setPage={setPage}

@@ -50,27 +50,27 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
 
   return (
     <div className="p-5 md:p-8 max-w-5xl mx-auto">
-      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-5"><ArrowLeft size={15} /> Back</button>
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-5 dark:text-slate-400 dark:hover:text-slate-200"><ArrowLeft size={15} /> Back</button>
 
       <div className="grid md:grid-cols-5 gap-6">
-        <div className="md:col-span-2 bg-white border border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center h-72 md:h-full">
+        <div className="md:col-span-2 bg-white border border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center h-72 md:h-full dark:bg-slate-900 dark:border-slate-700">
           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${meta.bg}`}><FIcon size={28} className={meta.color} /></div>
-          <p className="text-sm font-medium text-slate-800 px-2">{doc.fileName}</p>
-          <p className="text-xs text-slate-400 mt-1">{doc.fileType?.toUpperCase()} · {fmtBytes(doc.fileSizeBytes)}</p>
+          <p className="text-sm font-medium text-slate-800 px-2 dark:text-slate-200">{doc.fileName}</p>
+          <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{doc.fileType?.toUpperCase()} · {fmtBytes(doc.fileSizeBytes)}</p>
           <a href={doc.cloudFileUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-700 font-medium mt-4">Open original file</a>
         </div>
 
         <div className="md:col-span-3">
-          <h1 className="font-serif text-xl text-slate-900 leading-snug pr-4 mb-1">{doc.fileName}</h1>
+          <h1 className="font-serif text-xl text-slate-900 leading-snug pr-4 mb-1 dark:text-slate-100">{doc.fileName}</h1>
           <div className="flex items-center gap-2 mb-5">
             <Badge tone="slate">{doc.category}</Badge>
             {doc.isImportant && <Badge tone="amber">Important</Badge>}
-            <span className="text-xs text-slate-400">Uploaded {fmtDate(doc.createdAt)}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">Uploaded {fmtDate(doc.createdAt)}</span>
           </div>
 
-          <div className="flex items-center gap-1 border-b border-slate-200 mb-5">
+          <div className="flex items-center gap-1 border-b border-slate-200 mb-5 dark:border-slate-700">
             {["overview", "details", "chat"].map((t) => (
-              <button key={t} onClick={() => setTab(t)} className={`px-3 py-2 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? "border-teal-700 text-teal-800" : "border-transparent text-slate-500"}`}>
+              <button key={t} onClick={() => setTab(t)} className={`px-3 py-2 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? "border-teal-700 text-teal-800 dark:text-teal-300" : "border-transparent text-slate-500 dark:text-slate-400"}`}>
                 {t === "chat" ? "AI Chat" : t}
               </button>
             ))}
@@ -82,21 +82,21 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
               {doc.aiProcessingStatus === "failed" && <p className="text-sm text-rose-700 bg-rose-50 rounded-lg px-3 py-2">AI analysis failed for this document. You can still edit it manually.</p>}
               {doc.aiSummary && (
                 <div>
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 flex items-center gap-1.5"><Sparkles size={12} className="text-teal-600" /> AI Summary</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{doc.aiSummary}</p>
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 dark:text-slate-500"><Sparkles size={12} className="text-teal-600" /> AI Summary</p>
+                  <p className="text-sm text-slate-700 leading-relaxed dark:text-slate-300">{doc.aiSummary}</p>
                 </div>
               )}
               {doc.aiKeyPoints?.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Key Points</p>
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 dark:text-slate-500">Key Points</p>
                   <ul className="space-y-1.5">
-                    {doc.aiKeyPoints.map((k, i) => <li key={i} className="text-sm text-slate-700 flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-teal-600 mt-2 shrink-0" />{k}</li>)}
+                    {doc.aiKeyPoints.map((k, i) => <li key={i} className="text-sm text-slate-700 flex items-start gap-2 dark:text-slate-300"><span className="w-1 h-1 rounded-full bg-teal-600 mt-2 shrink-0" />{k}</li>)}
                   </ul>
                 </div>
               )}
               {(doc.tags?.length > 0 || doc.aiTags?.length > 0) && (
                 <div>
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Tags</p>
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 dark:text-slate-500">Tags</p>
                   <div className="flex flex-wrap gap-1.5">
                     {[...(doc.tags || []), ...(doc.aiTags || [])].map((t) => <Badge key={t} tone="teal">#{t}</Badge>)}
                   </div>
@@ -105,21 +105,21 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
               {doc.aiDetectedDates?.filter((d) => !d.confirmed).map((d, i) => (
                 <div key={i} className="bg-amber-50 border border-amber-100 rounded-lg p-4">
                   <p className="text-xs font-medium text-amber-800 uppercase tracking-wide mb-1">AI-detected date</p>
-                  <p className="text-sm text-slate-700 mb-3">{d.label}: <strong>{fmtDate(d.date)}</strong></p>
+                  <p className="text-sm text-slate-700 mb-3 dark:text-slate-300">{d.label}: <strong>{fmtDate(d.date)}</strong></p>
                   <div className="flex gap-2">
                     <button onClick={() => confirmDate(i, true)} className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-medium">Create Reminder</button>
                     <button onClick={() => confirmDate(i, false)} className="text-xs border border-amber-300 text-amber-800 px-3 py-1.5 rounded-lg font-medium">Ignore</button>
                   </div>
                 </div>
               ))}
-              <p className="text-xs text-slate-400 italic">Review AI-extracted information before relying on it.</p>
+              <p className="text-xs text-slate-400 italic dark:text-slate-500">Review AI-extracted information before relying on it.</p>
             </div>
           )}
 
           {tab === "details" && (
             <div className="grid grid-cols-2 gap-4 text-sm">
               {[["File type", doc.fileType?.toUpperCase()], ["File size", fmtBytes(doc.fileSizeBytes)], ["Category", doc.category], ["Uploaded", fmtDate(doc.createdAt)], ["Storage", "Cloud vault"], ["Status", "Encrypted"]].map(([k, v]) => (
-                <div key={k} className="border border-slate-100 rounded-lg p-3"><p className="text-xs text-slate-400">{k}</p><p className="font-medium text-slate-800">{v}</p></div>
+                <div key={k} className="border border-slate-100 rounded-lg p-3 dark:border-slate-800"><p className="text-xs text-slate-400 dark:text-slate-500">{k}</p><p className="font-medium text-slate-800 dark:text-slate-200">{v}</p></div>
               ))}
             </div>
           )}
@@ -127,20 +127,20 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
           {tab === "chat" && (
             <div className="text-center py-8">
               <Bot size={28} className="text-teal-700 mx-auto mb-3" />
-              <p className="text-sm text-slate-500 mb-4">Ask questions about this specific document.</p>
+              <p className="text-sm text-slate-500 mb-4 dark:text-slate-400">Ask questions about this specific document.</p>
               <button onClick={() => { setAssistantDoc(doc._id); setPage("assistant"); }} className="bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium px-4 py-2.5 rounded-lg">Ask DocMind AI About This Document</button>
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2 mt-8 pt-5 border-t border-slate-100">
-            <button onClick={() => update({ isFavorite: !doc.isFavorite })} className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg">
+          <div className="flex flex-wrap gap-2 mt-8 pt-5 border-t border-slate-100 dark:border-slate-800">
+            <button onClick={() => update({ isFavorite: !doc.isFavorite })} className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60">
               <Star size={14} className={doc.isFavorite ? "text-amber-500 fill-amber-500" : ""} /> {doc.isFavorite ? "Favorited" : "Favorite"}
             </button>
-            <button onClick={() => update({ isImportant: !doc.isImportant })} className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg">
+            <button onClick={() => update({ isImportant: !doc.isImportant })} className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60">
               <BadgeCheck size={14} /> {doc.isImportant ? "Marked Important" : "Mark Important"}
             </button>
-            <a href={doc.cloudFileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg"><Download size={14} /> Download</a>
-            <button onClick={() => update({ isArchived: !doc.isArchived })} className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg">
+            <a href={doc.cloudFileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60"><Download size={14} /> Download</a>
+            <button onClick={() => update({ isArchived: !doc.isArchived })} className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60">
               <Archive size={14} /> {doc.isArchived ? "Unarchive" : "Archive"}
             </button>
           </div>

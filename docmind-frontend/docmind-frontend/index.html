@@ -7,6 +7,12 @@
     <!-- Tailwind via CDN for prototype speed. For production, install Tailwind
          as a PostCSS build step instead (see README). -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // 'class' strategy lets us toggle dark mode with a class on <html>
+      // instead of only following the OS setting — required for a user-facing
+      // Light/Dark/System switch to actually work.
+      tailwind.config = { darkMode: 'class' };
+    </script>
   </head>
   <body>
     <div id="root"></div>

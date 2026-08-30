@@ -31,8 +31,8 @@ export default function Reminders({ openAddReminder }) {
     <div className="p-5 md:p-8 max-w-4xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="font-serif text-2xl text-slate-900">Reminders & Important Dates</h1>
-          <p className="text-slate-500 text-sm mt-1">Never miss a renewal, deadline, or important date.</p>
+          <h1 className="font-serif text-2xl text-slate-900 dark:text-slate-100">Reminders & Important Dates</h1>
+          <p className="text-slate-500 text-sm mt-1 dark:text-slate-400">Never miss a renewal, deadline, or important date.</p>
         </div>
         <button onClick={openAddReminder} className="flex items-center gap-1.5 bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium px-4 py-2.5 rounded-lg self-start">
           <Plus size={15} /> Create Reminder
@@ -45,7 +45,7 @@ export default function Reminders({ openAddReminder }) {
           <div className="space-y-2">
             {suggestions.map((s) => (
               <div key={`${s.documentId}-${s.dateIndex}`} className="bg-amber-50 border border-amber-100 rounded-lg p-4 flex items-center justify-between gap-3">
-                <p className="text-sm text-slate-700">Potential <strong>{s.label.toLowerCase()}</strong> detected in <strong>{s.fileName}</strong> — {fmtDate(s.date)}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300">Potential <strong>{s.label.toLowerCase()}</strong> detected in <strong>{s.fileName}</strong> — {fmtDate(s.date)}</p>
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => createFromSuggestion(s)} className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-medium">Create Reminder</button>
                   <button onClick={() => setSuggestions((sg) => sg.filter((x) => x !== s))} className="text-xs border border-amber-300 text-amber-800 px-3 py-1.5 rounded-lg font-medium">Ignore</button>
@@ -58,7 +58,7 @@ export default function Reminders({ openAddReminder }) {
 
       <div className="flex items-center gap-2 mb-5">
         {["upcoming", "completed"].map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-3.5 py-1.5 rounded-full text-sm font-medium capitalize ${tab === t ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-600"}`}>{t}</button>
+          <button key={t} onClick={() => setTab(t)} className={`px-3.5 py-1.5 rounded-full text-sm font-medium capitalize ${tab === t ? "bg-slate-900 dark:bg-teal-700 text-white" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"}`}>{t}</button>
         ))}
       </div>
 
@@ -67,13 +67,13 @@ export default function Reminders({ openAddReminder }) {
       ) : (
         <div className="space-y-2">
           {[...filtered].sort((a, b) => (a.date < b.date ? -1 : 1)).map((r) => (
-            <div key={r._id} className="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-3">
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${r.priority === "high" ? "bg-rose-50 text-rose-600" : r.priority === "medium" ? "bg-amber-50 text-amber-600" : "bg-slate-100 text-slate-500"}`}><Clock size={16} /></div>
+            <div key={r._id} className="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-3 dark:bg-slate-900 dark:border-slate-700">
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${r.priority === "high" ? "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" : r.priority === "medium" ? "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}><Clock size={16} /></div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-800 truncate">{r.title}</p>
-                <p className="text-xs text-slate-400">{fmtDate(r.date)}{r.status === "upcoming" ? ` · ${daysUntil(r.date) >= 0 ? `${daysUntil(r.date)} days away` : "overdue"}` : ""}</p>
+                <p className="text-sm font-medium text-slate-800 truncate dark:text-slate-200">{r.title}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">{fmtDate(r.date)}{r.status === "upcoming" ? ` · ${daysUntil(r.date) >= 0 ? `${daysUntil(r.date)} days away` : "overdue"}` : ""}</p>
               </div>
-              {r.status === "upcoming" && <button onClick={() => completeReminder(r._id)} className="text-xs border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg font-medium shrink-0">Mark done</button>}
+              {r.status === "upcoming" && <button onClick={() => completeReminder(r._id)} className="text-xs border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg font-medium shrink-0 dark:border-slate-700 dark:hover:bg-slate-800/60">Mark done</button>}
             </div>
           ))}
         </div>

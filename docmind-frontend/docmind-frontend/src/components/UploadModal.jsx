@@ -52,28 +52,28 @@ export default function UploadModal({ onClose, onComplete }) {
             onClick={() => inputRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
-            className="border-2 border-dashed border-slate-200 hover:border-teal-400 rounded-xl p-10 text-center cursor-pointer transition-colors"
+            className="border-2 border-dashed border-slate-200 hover:border-teal-400 rounded-xl p-10 text-center cursor-pointer transition-colors dark:border-slate-700"
           >
             <Upload className="mx-auto text-teal-700 mb-3" size={26} />
-            <p className="text-sm font-medium text-slate-700">Drag and drop your file here</p>
-            <p className="text-xs text-slate-400 mt-1">or click to Browse Files</p>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Drag and drop your file here</p>
+            <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">or click to Browse Files</p>
             <p className="text-xs text-slate-300 mt-4">Supports PDF, DOCX, TXT, JPG, PNG — up to 25MB</p>
           </div>
           <input ref={inputRef} type="file" hidden accept=".pdf,.docx,.txt,.jpg,.jpeg,.png" onChange={(e) => handleFiles(e.target.files)} />
-          <label className="flex items-center gap-2 text-sm text-slate-600 mt-5">
-            <input type="checkbox" checked={autoAnalyze} onChange={(e) => setAutoAnalyze(e.target.checked)} className="rounded border-slate-300 text-teal-700" />
+          <label className="flex items-center gap-2 text-sm text-slate-600 mt-5 dark:text-slate-400">
+            <input type="checkbox" checked={autoAnalyze} onChange={(e) => setAutoAnalyze(e.target.checked)} className="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-teal-700" />
             Automatically organize this document with AI
           </label>
         </div>
       ) : (
         <div className="py-4">
-          <p className="text-sm font-medium text-slate-800 mb-1 truncate">{file?.name}</p>
-          <p className="text-xs text-slate-400 mb-6">{STAGES[Math.min(stageIndex, 5) - 1]}…</p>
+          <p className="text-sm font-medium text-slate-800 mb-1 truncate dark:text-slate-200">{file?.name}</p>
+          <p className="text-xs text-slate-400 mb-6 dark:text-slate-500">{STAGES[Math.min(stageIndex, 5) - 1]}…</p>
           <div className="space-y-3">
             {STAGES.map((s, i) => (
               <div key={s} className="flex items-center gap-3">
-                {i + 1 < stageIndex ? <CheckCircle2 size={17} className="text-teal-600" /> : i + 1 === stageIndex ? <div className="w-4 h-4 rounded-full border-2 border-teal-600 border-t-transparent animate-spin" /> : <div className="w-4 h-4 rounded-full border-2 border-slate-200" />}
-                <span className={`text-sm ${i + 1 <= stageIndex ? "text-slate-800" : "text-slate-300"}`}>{s}</span>
+                {i + 1 < stageIndex ? <CheckCircle2 size={17} className="text-teal-600" /> : i + 1 === stageIndex ? <div className="w-4 h-4 rounded-full border-2 border-teal-600 border-t-transparent animate-spin" /> : <div className="w-4 h-4 rounded-full border-2 border-slate-200 dark:border-slate-700" />}
+                <span className={`text-sm ${i + 1 <= stageIndex ? "text-slate-800 dark:text-slate-200" : "text-slate-300 dark:text-slate-600"}`}>{s}</span>
               </div>
             ))}
           </div>
