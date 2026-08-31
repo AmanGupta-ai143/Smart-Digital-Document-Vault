@@ -1,13 +1,28 @@
 import React, { useState } from "react";
-import { FileText, Upload, Search, Filter, Grid3x3, List as ListIcon, Star, Sparkles } from "lucide-react";
+import { FileText, Upload, Search, Filter, Grid3x3, List as ListIcon, Rows3, Star, Sparkles } from "lucide-react";
 import { CATEGORY_META, FILE_ICON, DOC_CATEGORIES } from "../lib/constants.js";
 import { fmtDate, fmtBytes } from "../lib/format.js";
 import { Badge, EmptyState, Spinner, ErrorState } from "../components/ui.jsx";
 import { useDocuments } from "../hooks/useDocuments.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 function DocumentCard({ doc, view, onOpen, onToggleFavorite }) {
   const meta = CATEGORY_META[doc.category] || CATEGORY_META.Other;
   const FIcon = FILE_ICON[doc.fileType] || FileText;
+
+  if (view === "compact") {
+    // Denser than list: one slim row, minimal padding, no per-row card border —
+    // rows are visually separated by a top-level divider instead.
+    return (
+      <button onClick={() => onOpen(doc._id)} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
+        <FIcon size={14} className={`shrink-0 ${meta.color}`} />
+        <span className="text-sm text-slate-800 dark:text-slate-200 truncate flex-1">{doc.fileName}</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0 hidden sm:inline">{doc.category}</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0 w-20 text-right">{fmtDate(doc.createdAt)}</span>
+        {doc.isImportant && <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />}
+      </button>
+    );
+  }
 
   if (view === "list") {
     return (
@@ -43,9 +58,16 @@ function DocumentCard({ doc, view, onOpen, onToggleFavorite }) {
   );
 }
 
+const VALID_VIEWS = ["grid", "list", "compact"];
+
 export default function MyDocuments({ openDoc, openUpload }) {
+  const { user } = useAuth();
   const [tab, setTab] = useState("all");
-  const [view, setView] = useState("grid");
+  // Seed from the user's saved Settings > Document Preferences > Default view,
+  // falling back to grid if they've never set one.
+  const [view, setView] = useState(() =>
+    VALID_VIEWS.includes(user?.preferences?.defaultDocumentView) ? user.preferences.defaultDocumentView : "grid"
+  );
   const [category, setCategory] = useState("");
   const [query, setQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -67,6 +89,12 @@ export default function MyDocuments({ openDoc, openUpload }) {
     { key: "important", label: "Important" },
     { key: "favorites", label: "Favorites" },
     { key: "archived", label: "Archived" },
+  ];
+
+  const viewButtons = [
+    { key: "grid", icon: Grid3x3 },
+    { key: "list", icon: ListIcon },
+    { key: "compact", icon: Rows3 },
   ];
 
   return (
@@ -98,8 +126,16 @@ export default function MyDocuments({ openDoc, openUpload }) {
           <Filter size={14} /> Filter
         </button>
         <div className="flex border border-slate-200 rounded-lg overflow-hidden dark:border-slate-700">
-          <button onClick={() => setView("grid")} className={`p-2 ${view === "grid" ? "bg-slate-900 dark:bg-teal-700 text-white" : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400"}`}><Grid3x3 size={15} /></button>
-          <button onClick={() => setView("list")} className={`p-2 ${view === "list" ? "bg-slate-900 dark:bg-teal-700 text-white" : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400"}`}><ListIcon size={15} /></button>
+          {viewButtons.map(({ key, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setView(key)}
+              title={key[0].toUpperCase() + key.slice(1) + " view"}
+              className={`p-2 ${view === key ? "bg-slate-900 dark:bg-teal-700 text-white" : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400"}`}
+            >
+              <Icon size={15} />
+            </button>
+          ))}
         </div>
       </div>
 
@@ -121,6 +157,10 @@ export default function MyDocuments({ openDoc, openUpload }) {
       ) : view === "grid" ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {documents.map((d) => <DocumentCard key={d._id} doc={d} view="grid" onOpen={openDoc} onToggleFavorite={toggleFavorite} />)}
+        </div>
+      ) : view === "compact" ? (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
+          {documents.map((d) => <DocumentCard key={d._id} doc={d} view="compact" onOpen={openDoc} onToggleFavorite={toggleFavorite} />)}
         </div>
       ) : (
         <div className="space-y-2">
