@@ -13,6 +13,7 @@ const {
 } = require("../utils/tokens");
 const logActivity = require("../utils/logActivity");
 const notify = require("../utils/notify");
+const { sendLoginAlertEmail } = require("../utils/email");
 
 const router = express.Router();
 
@@ -173,6 +174,12 @@ async function issueSession(user, req, deviceLabel = "Unknown device", deviceTyp
   const accessToken = signAccessToken(user._id.toString(), device._id.toString());
 
   await notify(user, "security", `New sign-in from ${deviceLabel}.`);
+
+  // Best-effort, non-blocking — a slow or failed email provider should
+  // never delay or break someone's login.
+  if (user.preferences?.notifications?.security !== false) {
+    sendLoginAlertEmail(user, { deviceLabel, ip: req.ip, time: new Date().toLocaleString() }).catch(() => {});
+  }
 
   return { accessToken, refreshToken: `${device._id}.${refreshTokenRaw}` };
 }

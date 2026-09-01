@@ -16,10 +16,9 @@ const searchRoutes = require("./routes/search");
 const activityRoutes = require("./routes/activity");
 const settingsRoutes = require("./routes/settings");
 const notificationRoutes = require("./routes/notifications");
+const webauthnRoutes = require("./routes/webauthn");
 
 const app = express();
-
-app.set('trust proxy', 1);  // add this line — required behind Render's reverse proxy
 
 connectDB();
 
@@ -46,6 +45,7 @@ app.use("/api/search", searchRoutes);
 app.use("/api/activity", activityRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/webauthn", webauthnRoutes);
 
 app.use((req, res) => res.status(404).json({ message: "Route not found." }));
 app.use(errorHandler);

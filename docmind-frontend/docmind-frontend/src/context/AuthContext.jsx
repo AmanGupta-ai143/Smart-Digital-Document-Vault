@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { tokenStore } from "../api/client.js";
 import * as authApi from "../api/auth.js";
+import * as webauthnApi from "../api/webauthn.js";
 
 const AuthContext = createContext(null);
 
@@ -52,6 +53,14 @@ export function AuthProvider({ children }) {
     return u;
   };
 
+  const loginWithPasskey = async () => {
+    setError(null);
+    const u = await webauthnApi.loginWithPasskey();
+    setUser(u);
+    setStatus("authenticated");
+    return u;
+  };
+
   const signup = async (details) => {
     setError(null);
     const u = await authApi.signup(details);
@@ -67,7 +76,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, status, error, login, completeTwoFactorLogin, signup, logout }}>
+    <AuthContext.Provider value={{ user, setUser, status, error, login, completeTwoFactorLogin, loginWithPasskey, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

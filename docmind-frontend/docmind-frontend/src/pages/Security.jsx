@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Smartphone, Laptop, Monitor, KeyRound, ShieldCheck } from "lucide-react";
+import { Smartphone, Laptop, Monitor, KeyRound, ShieldCheck, Fingerprint, Plus, Trash2 } from "lucide-react";
 import { Badge, Spinner, ErrorState, Modal } from "../components/ui.jsx";
 import * as authApi from "../api/auth.js";
+import * as webauthnApi from "../api/webauthn.js";
 import { useToast } from "../context/ToastContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
+import { fmtDate } from "../lib/format.js";
 
 const ICON = { mobile: Smartphone, laptop: Laptop, desktop: Monitor, tablet: Smartphone };
 
@@ -107,6 +110,11 @@ export default function SecurityCenter() {
   const [showSetup, setShowSetup] = useState(false);
   const [showDisable, setShowDisable] = useState(false);
 
+  const [passkeys, setPasskeys] = useState([]);
+  const [passkeysLoading, setPasskeysLoading] = useState(true);
+  const [addingPasskey, setAddingPasskey] = useState(false);
+  const passkeySupported = browserSupportsWebAuthn();
+
   const twoFAEnabled = !!user?.twoFactorEnabled;
 
   const load = () => {
@@ -115,9 +123,15 @@ export default function SecurityCenter() {
     authApi.fetchSessions().then(setSessions).catch((e) => setError(e.message)).finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  const loadPasskeys = () => {
+    setPasskeysLoading(true);
+    webauthnApi.listPasskeys().then(setPasskeys).catch(() => {}).finally(() => setPasskeysLoading(false));
+  };
 
-  const score = 60 + (twoFAEnabled ? 25 : 0) + (sessions.length <= 3 ? 10 : 0);
+  useEffect(load, []);
+  useEffect(loadPasskeys, []);
+
+  const score = 60 + (twoFAEnabled ? 15 : 0) + (passkeys.length > 0 ? 10 : 0) + (sessions.length <= 3 ? 10 : 0);
 
   const removeDevice = async (id) => {
     setSessions((ss) => ss.filter((s) => s.id !== id));
@@ -137,6 +151,33 @@ export default function SecurityCenter() {
       load();
     } catch (err) {
       showToast(err.message, "error");
+    }
+  };
+
+  const addPasskey = async () => {
+    setAddingPasskey(true);
+    try {
+      await webauthnApi.registerPasskey();
+      showToast("Passkey added.");
+      loadPasskeys();
+    } catch (err) {
+      const friendly = /NotAllowedError|cancel/i.test(err.message)
+        ? "Passkey setup was cancelled."
+        : err.message;
+      showToast(friendly, "error");
+    } finally {
+      setAddingPasskey(false);
+    }
+  };
+
+  const removePasskey = async (id) => {
+    setPasskeys((ps) => ps.filter((p) => p.id !== id));
+    try {
+      await webauthnApi.deletePasskey(id);
+      showToast("Passkey removed.");
+    } catch (err) {
+      showToast(err.message, "error");
+      loadPasskeys();
     }
   };
 
@@ -176,6 +217,41 @@ export default function SecurityCenter() {
         </div>
         {twoFAEnabled && (
           <p className="text-xs text-teal-700 mt-3 flex items-center gap-1"><ShieldCheck size={12} /> Two-factor authentication is active on your account.</p>
+        )}
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden dark:bg-slate-900 dark:border-slate-700">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <p className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2"><Fingerprint size={15} /> Passkeys</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Sign in with your fingerprint, face, or device PIN — no password needed.</p>
+          </div>
+          {passkeySupported && (
+            <button onClick={addPasskey} disabled={addingPasskey} className="flex items-center gap-1.5 text-xs border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 disabled:opacity-60 px-3 py-1.5 rounded-lg font-medium shrink-0 text-slate-700 dark:text-slate-300">
+              <Plus size={13} /> {addingPasskey ? "Waiting…" : "Add a Passkey"}
+            </button>
+          )}
+        </div>
+        {!passkeySupported ? (
+          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-8 px-5">Your current browser doesn't support passkeys.</p>
+        ) : passkeysLoading ? (
+          <Spinner />
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {passkeys.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 px-5 py-3.5">
+                <Fingerprint size={18} className="text-teal-700 dark:text-teal-400 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{p.deviceLabel}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">Added {fmtDate(p.createdAt)}</p>
+                </div>
+                <button onClick={() => removePasskey(p.id)} className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 shrink-0">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+            {passkeys.length === 0 && <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-8">No passkeys added yet.</p>}
+          </div>
         )}
       </div>
 

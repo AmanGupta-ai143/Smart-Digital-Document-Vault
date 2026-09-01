@@ -36,6 +36,23 @@ const userSchema = new mongoose.Schema(
     twoFactorEnabled: { type: Boolean, default: false },
     twoFactorSecret: { type: String, select: false },
     pendingTwoFactorSecret: { type: String, select: false },
+
+    // WebAuthn / passkeys (fingerprint, Face ID, security keys). Each entry
+    // is one registered authenticator. publicKey is stored base64-encoded;
+    // counter guards against cloned-authenticator replay attacks.
+    webauthnCredentials: [
+      {
+        credentialID: { type: String, required: true },
+        publicKey: { type: String, required: true },
+        counter: { type: Number, default: 0 },
+        transports: [String],
+        deviceLabel: { type: String, default: "Passkey" },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    // Transient challenge for an in-progress registration ceremony (login
+    // ceremonies use a signed token instead, since the user isn't known yet).
+    currentChallenge: { type: String, select: false },
     recoveryEmail: { type: String, default: null },
     devices: [deviceSessionSchema],
     lastLoginAt: Date,

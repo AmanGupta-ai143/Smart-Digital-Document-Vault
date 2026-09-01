@@ -16,7 +16,16 @@ router.use(requireAuth);
  */
 router.patch("/preferences", async (req, res, next) => {
   try {
-    req.user.preferences = { ...req.user.preferences.toObject(), ...req.body };
+    const current = req.user.preferences.toObject();
+    // notifications is a nested object — a plain top-level spread would
+    // silently wipe out any notification toggles not included in this
+    // request, so merge that one sub-object explicitly.
+    const { notifications, ...topLevel } = req.body;
+    req.user.preferences = {
+      ...current,
+      ...topLevel,
+      notifications: { ...current.notifications, ...(notifications || {}) },
+    };
     await req.user.save();
     res.json({ preferences: req.user.preferences });
   } catch (err) {

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { FileText, ArrowLeft, Eye, EyeOff, Lock } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { FileText, ArrowLeft, Eye, EyeOff, Lock, Fingerprint } from "lucide-react";
 import { Seal } from "../components/ui.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
+import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
 
 function AuthLayout({ children }) {
   return (
@@ -24,14 +25,34 @@ function AuthLayout({ children }) {
 }
 
 export default function LoginPage({ onGoSignup, onBack }) {
-  const { login, completeTwoFactorLogin } = useAuth();
+  const { login, completeTwoFactorLogin, loginWithPasskey } = useAuth();
   const { showToast } = useToast();
   const [showPw, setShowPw] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
   const [twoFAChallenge, setTwoFAChallenge] = useState(null); // { pendingToken }
   const [otpCode, setOtpCode] = useState("");
+
+  useEffect(() => { setPasskeySupported(browserSupportsWebAuthn()); }, []);
+
+  const submitPasskey = async () => {
+    setError(null);
+    setPasskeyLoading(true);
+    try {
+      await loginWithPasskey();
+    } catch (err) {
+      // A cancelled or timed-out browser prompt shouldn't read like a server error.
+      const friendly = /NotAllowedError|cancel|timed? ?out/i.test(err.message)
+        ? "Passkey sign-in was cancelled or no passkey was found for this site."
+        : err.message;
+      showToast(friendly, "error");
+    } finally {
+      setPasskeyLoading(false);
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -93,6 +114,23 @@ export default function LoginPage({ onGoSignup, onBack }) {
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Log in to access your vault.</p>
 
         {error && <div className="bg-rose-50 border border-rose-100 text-rose-700 text-sm rounded-lg px-3 py-2 mb-4">{error}</div>}
+
+        {passkeySupported && (
+          <>
+            <button
+              type="button"
+              onClick={submitPasskey}
+              disabled={passkeyLoading}
+              className="w-full border border-slate-200 dark:border-slate-700 dark:text-slate-200 hover:border-teal-600 disabled:opacity-60 py-2.5 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 mb-4"
+            >
+              <Fingerprint size={16} className="text-teal-700 dark:text-teal-400" />
+              {passkeyLoading ? "Waiting for your passkey…" : "Sign in with a passkey"}
+            </button>
+            <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 mb-4">
+              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" /> or <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+            </div>
+          </>
+        )}
 
         <form onSubmit={submit} className="space-y-4">
           <div>

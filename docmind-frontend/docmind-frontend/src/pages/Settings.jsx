@@ -163,6 +163,30 @@ export default function Settings({ setPage }) {
       </section>
 
       <section className="bg-white border border-slate-200 rounded-xl p-5 dark:bg-slate-900 dark:border-slate-700">
+        <h2 className="font-medium text-slate-900 mb-4 dark:text-slate-100">Notifications</h2>
+        <div className="space-y-3">
+          {[
+            ["security", "Login alert emails", "Get an email whenever a new device signs in to your account."],
+            ["reminders", "Reminder notifications", "In-app alerts for upcoming and AI-suggested reminders."],
+            ["aiUpdates", "AI processing updates", "Notify me when document analysis finishes."],
+          ].map(([key, label, desc]) => (
+            <label key={key} className="flex items-center justify-between gap-4">
+              <span>
+                <span className="text-sm text-slate-700 dark:text-slate-300 block">{label}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500">{desc}</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={prefs.notifications?.[key] !== false}
+                onChange={(e) => save({ notifications: { [key]: e.target.checked } })}
+                className="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-teal-700 shrink-0"
+              />
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <section className="bg-white border border-slate-200 rounded-xl p-5 dark:bg-slate-900 dark:border-slate-700">
         <h2 className="font-medium text-slate-900 mb-1 dark:text-slate-100">Security</h2>
         <p className="text-sm text-slate-500 mb-3 dark:text-slate-400">Manage sessions, two-factor authentication, and login activity.</p>
         <button onClick={() => setPage("security")} className="text-sm text-teal-700 font-medium">Go to Security Center →</button>
