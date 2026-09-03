@@ -13,7 +13,7 @@ const {
 } = require("../utils/tokens");
 const logActivity = require("../utils/logActivity");
 const notify = require("../utils/notify");
-const { sendLoginAlertEmail } = require("../utils/email");
+const { sendLoginAlertEmail, sendVerificationEmail } = require("../utils/email");
 
 const router = express.Router();
 
@@ -47,9 +47,11 @@ router.post(
 
       const user = new User({ name, email });
       await user.setPassword(password);
+      const verificationCode = await user.setEmailVerificationCode();
       await user.save();
 
       await logActivity(user._id, "login", "Account created and signed in for the first time.");
+      await sendVerificationEmail(user, verificationCode); // never throws — safe to await directly
 
       const { accessToken, refreshToken } = await issueSession(user, req);
       res.status(201).json({
@@ -298,6 +300,59 @@ router.post(
  */
 router.get("/me", requireAuth, (req, res) => {
   res.json({ user: req.user.toSafeJSON() });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Email verification                                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * POST /api/auth/verify-email
+ * Body: { code }
+ */
+router.post("/verify-email", requireAuth, [body("code").isLength({ min: 6, max: 6 })], validate, async (req, res, next) => {
+  try {
+    if (req.user.emailVerified) {
+      return res.json({ message: "Email already verified.", user: req.user.toSafeJSON() });
+    }
+
+    const user = await User.findById(req.user._id).select("+emailVerificationCodeHash +emailVerificationExpires");
+    const valid = await user.verifyEmailCode(req.body.code);
+    if (!valid) {
+      return res.status(400).json({ message: "That code is incorrect or has expired." });
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationCodeHash = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    await logActivity(user._id, "login", "Email address verified.");
+
+    res.json({ message: "Email verified.", user: user.toSafeJSON() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/auth/resend-verification
+ */
+router.post("/resend-verification", requireAuth, async (req, res, next) => {
+  try {
+    if (req.user.emailVerified) {
+      return res.json({ message: "Email already verified." });
+    }
+
+    const user = await User.findById(req.user._id);
+    const code = await user.setEmailVerificationCode();
+    await user.save();
+    await sendVerificationEmail(user, code);
+
+    res.json({ message: "Verification code resent." });
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ------------------------------------------------------------------ */

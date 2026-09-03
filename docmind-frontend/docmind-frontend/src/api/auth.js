@@ -71,3 +71,12 @@ export async function removeSession(id) {
 export async function removeAllOtherSessions() {
   return apiRequest("/auth/sessions", { method: "DELETE" });
 }
+
+export async function verifyEmail(code) {
+  const data = await apiRequest("/auth/verify-email", { method: "POST", body: { code } });
+  return data.user;
+}
+
+export async function resendVerificationCode() {
+  return apiRequest("/auth/resend-verification", { method: "POST" });
+}

@@ -18,6 +18,7 @@ import SecurityCenter from "./pages/Security.jsx";
 import Settings from "./pages/Settings.jsx";
 
 import { Sidebar, TopBar, MobileNav, MobileMoreSheet } from "./components/Shell.jsx";
+import EmailVerificationBanner from "./components/EmailVerificationBanner.jsx";
 import UploadModal from "./components/UploadModal.jsx";
 import AddContactModal from "./components/AddContactModal.jsx";
 import AddReminderModal from "./components/AddReminderModal.jsx";
@@ -74,6 +75,7 @@ export default function App() {
 
       <div className="flex-1 min-w-0 pb-16 md:pb-0">
         <TopBar user={user} onSearchOpen={() => setShowSearch(true)} onUpload={() => setShowUpload(true)} onNotifOpen={() => setShowNotif(true)} onMenuOpen={() => setMobileMore(true)} notifRefreshKey={notifRefreshKey} />
+        <EmailVerificationBanner />
 
         {page === "dashboard" && <Dashboard setPage={setPage} openDoc={openDoc} openUpload={() => setShowUpload(true)} />}
         {page === "documents" && <MyDocuments openDoc={openDoc} openUpload={() => setShowUpload(true)} />}

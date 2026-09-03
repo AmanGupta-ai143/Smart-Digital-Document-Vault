@@ -34,6 +34,12 @@ const userSchema = new mongoose.Schema(
 
     // Security
     twoFactorEnabled: { type: Boolean, default: false },
+
+    // Email verification — proves the person actually owns the inbox they
+    // signed up with, not just that the string is formatted like an email.
+    emailVerified: { type: Boolean, default: false },
+    emailVerificationCodeHash: { type: String, select: false },
+    emailVerificationExpires: { type: Date, select: false },
     twoFactorSecret: { type: String, select: false },
     pendingTwoFactorSecret: { type: String, select: false },
 
@@ -89,11 +95,32 @@ userSchema.methods.comparePassword = function (plainPassword) {
   return bcrypt.compare(plainPassword, this.passwordHash);
 };
 
+/**
+ * Generates a 6-digit verification code, stores its bcrypt hash (never the
+ * plain code) with a 15-minute expiry, and returns the plain code so the
+ * caller can email it. Reused for both initial signup and "resend code".
+ */
+userSchema.methods.setEmailVerificationCode = async function () {
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const salt = await bcrypt.genSalt(10);
+  this.emailVerificationCodeHash = await bcrypt.hash(code, salt);
+  this.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+  return code;
+};
+
+userSchema.methods.verifyEmailCode = async function (submittedCode) {
+  if (!this.emailVerificationCodeHash || !this.emailVerificationExpires) return false;
+  if (this.emailVerificationExpires < new Date()) return false;
+  return bcrypt.compare(submittedCode, this.emailVerificationCodeHash);
+};
+
 userSchema.methods.toSafeJSON = function () {
   const obj = this.toObject();
   delete obj.passwordHash;
   delete obj.twoFactorSecret;
   delete obj.devices;
+  delete obj.emailVerificationCodeHash;
+  delete obj.emailVerificationExpires;
   return obj;
 };
 
