@@ -56,4 +56,28 @@ function sendLoginAlertEmail(user, { deviceLabel, ip, time }) {
   });
 }
 
-module.exports = { sendEmail, sendLoginAlertEmail };
+/**
+ * Signup verification email — a 6-digit code, expires in 15 minutes.
+ */
+function sendVerificationEmail(user, code) {
+  return sendEmail({
+    to: user.email,
+    subject: `${code} is your DocMind AI verification code`,
+    html: `
+      <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;color:#1e293b">
+        <h2 style="color:#0f766e;margin-bottom:4px">Verify your email</h2>
+        <p>Hi ${user.name || "there"},</p>
+        <p>Enter this code to confirm this is really your inbox:</p>
+        <div style="font-size:32px;font-weight:700;letter-spacing:8px;text-align:center;background:#f0fdfa;color:#0f766e;padding:20px;border-radius:12px;margin:20px 0">
+          ${code}
+        </div>
+        <p style="color:#64748b;font-size:13px">This code expires in 15 minutes. If you didn't create a DocMind AI account, you can ignore this email.</p>
+        <p style="color:#94a3b8;font-size:12px;margin-top:28px;border-top:1px solid #e2e8f0;padding-top:12px">
+          DocMind AI — a personal vault, not a public archive.
+        </p>
+      </div>
+    `,
+  });
+}
+
+module.exports = { sendEmail, sendLoginAlertEmail, sendVerificationEmail };
