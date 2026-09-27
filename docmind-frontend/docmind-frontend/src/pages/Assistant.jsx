@@ -3,16 +3,18 @@ import { Send, Bot } from "lucide-react";
 import { useDocuments } from "../hooks/useDocuments.js";
 import { askDocuments } from "../api/documents.js";
 
-export default function AIAssistant({ initialDocId }) {
+export default function AIAssistant({ initialDocId, openDoc }) {
   const { documents } = useDocuments({ archived: "false", limit: 100 });
   const [scope, setScope] = useState(initialDocId ? "one" : "all");
   const [scopeDocId, setScopeDocId] = useState(initialDocId || "");
   const [messages, setMessages] = useState([
-    { role: "ai", text: "Hi — ask me anything about your documents. I'll only look at the ones in scope below.", sources: [], suggestions: ["Summarize my recent documents", "Find my important certificates", "What deadlines are coming up?"] },
+    { role: "ai", text: "Hi — ask me anything about your documents. I'll only look at the ones in scope below.", sources: [], suggestions: ["Find my expiring documents", "Summarize my recent documents", "What reminders do I have?", "Which documents need my attention?"] },
   ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
+
+  const docByName = (name) => documents.find((d) => d.fileName === name);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   useEffect(() => { if (!scopeDocId && documents[0]) setScopeDocId(documents[0]._id); }, [documents]); // eslint-disable-line
@@ -56,7 +58,14 @@ export default function AIAssistant({ initialDocId }) {
               <p className="text-sm whitespace-pre-line leading-relaxed">{m.text}</p>
               {m.sources?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {m.sources.map((s) => <span key={s} className="text-[10px] bg-white/70 text-teal-800 px-2 py-0.5 rounded-full font-medium">{s}</span>)}
+                  {m.sources.map((s) => {
+                    const match = docByName(s);
+                    return match && openDoc ? (
+                      <button key={s} onClick={() => openDoc(match._id)} className="text-[10px] bg-white/70 hover:bg-white text-teal-800 px-2 py-0.5 rounded-full font-medium underline decoration-dotted">{s}</button>
+                    ) : (
+                      <span key={s} className="text-[10px] bg-white/70 text-teal-800 px-2 py-0.5 rounded-full font-medium">{s}</span>
+                    );
+                  })}
                 </div>
               )}
               {m.suggestions?.length > 0 && (

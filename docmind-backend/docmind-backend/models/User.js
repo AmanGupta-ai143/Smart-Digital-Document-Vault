@@ -72,6 +72,7 @@ const userSchema = new mongoose.Schema(
       defaultDocumentView: { type: String, enum: ["grid", "list", "compact"], default: "grid" },
       dashboardLayout: { type: String, enum: ["default", "minimal", "detailed", "custom"], default: "default" },
       autoAiAnalysisOnUpload: { type: Boolean, default: true },
+      hasSeenOnboarding: { type: Boolean, default: false },
       notifications: {
         reminders: { type: Boolean, default: true },
         email: { type: Boolean, default: true },

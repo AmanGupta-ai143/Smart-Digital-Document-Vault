@@ -28,6 +28,8 @@ const documentSchema = new mongoose.Schema(
     isImportant: { type: Boolean, default: false },
     isFavorite: { type: Boolean, default: false },
     isArchived: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
 
     // AI-derived content — always kept separate from user-provided fields
     extractedText: { type: String, default: "" },
@@ -39,6 +41,7 @@ const documentSchema = new mongoose.Schema(
         label: String, // e.g. "Renewal date"
         date: Date,
         confirmed: { type: Boolean, default: false },
+        reminderId: { type: mongoose.Schema.Types.ObjectId, ref: "Reminder", default: null },
       },
     ],
     aiCategoryConfidence: { type: Number, default: null }, // 0-1

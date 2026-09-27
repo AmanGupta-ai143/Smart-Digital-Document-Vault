@@ -1,13 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { Bell, Plus, Sparkles, Clock } from "lucide-react";
+import { Bell, Plus, Sparkles, Clock, FileText, Trash2, CheckCircle2 } from "lucide-react";
 import { fmtDate, daysUntil } from "../lib/format.js";
 import { EmptyState, Spinner, ErrorState } from "../components/ui.jsx";
 import { useReminders } from "../hooks/useContactsReminders.js";
 import { useToast } from "../context/ToastContext.jsx";
 import * as api from "../api/resources.js";
 
-export default function Reminders({ openAddReminder }) {
-  const { reminders, loading, error, reload, completeReminder } = useReminders();
+function bucketOf(r) {
+  if (r.status !== "upcoming") return r.status; // "completed" | "dismissed"
+  const d = daysUntil(r.date);
+  if (d < 0) return "overdue";
+  if (d === 0) return "today";
+  return "upcoming";
+}
+
+const TABS = [
+  { key: "overdue", label: "Overdue" },
+  { key: "today", label: "Today" },
+  { key: "upcoming", label: "Upcoming" },
+  { key: "completed", label: "Completed" },
+];
+
+export default function Reminders({ openAddReminder, openDoc }) {
+  const { reminders, loading, error, reload, completeReminder, removeReminder } = useReminders();
   const { showToast } = useToast();
   const [tab, setTab] = useState("upcoming");
   const [suggestions, setSuggestions] = useState([]);
@@ -25,7 +40,10 @@ export default function Reminders({ openAddReminder }) {
     }
   };
 
-  const filtered = reminders.filter((r) => r.status === tab);
+  const counts = TABS.reduce((acc, t) => ({ ...acc, [t.key]: 0 }), {});
+  reminders.forEach((r) => { const b = bucketOf(r); if (counts[b] !== undefined) counts[b] += 1; });
+
+  const filtered = reminders.filter((r) => bucketOf(r) === tab).sort((a, b) => (a.date < b.date ? -1 : 1));
 
   return (
     <div className="p-5 md:p-8 max-w-4xl mx-auto">
@@ -56,24 +74,44 @@ export default function Reminders({ openAddReminder }) {
         </div>
       )}
 
-      <div className="flex items-center gap-2 mb-5">
-        {["upcoming", "completed"].map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-3.5 py-1.5 rounded-full text-sm font-medium capitalize ${tab === t ? "bg-slate-900 dark:bg-teal-700 text-white" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"}`}>{t}</button>
+      <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-1">
+        {TABS.map((t) => (
+          <button key={t.key} onClick={() => setTab(t.key)} className={`px-3.5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-1.5 ${tab === t.key ? "bg-slate-900 dark:bg-teal-700 text-white" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"}`}>
+            {t.label}
+            {counts[t.key] > 0 && <span className={`text-[10px] rounded-full px-1.5 ${tab === t.key ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"}`}>{counts[t.key]}</span>}
+          </button>
         ))}
       </div>
 
       {loading ? <Spinner label="Loading reminders…" /> : error ? <ErrorState message={error} onRetry={reload} /> : filtered.length === 0 ? (
-        <EmptyState icon={Bell} title="Nothing scheduled yet" subtitle="Create a reminder or let DocMind AI help identify important dates." actionLabel="Create Reminder" onAction={openAddReminder} />
+        <EmptyState icon={Bell} title={`Nothing ${tab === "upcoming" ? "scheduled" : tab} yet`} subtitle="Create a reminder or let DocMind AI help identify important dates." actionLabel="Create Reminder" onAction={openAddReminder} />
       ) : (
         <div className="space-y-2">
-          {[...filtered].sort((a, b) => (a.date < b.date ? -1 : 1)).map((r) => (
+          {filtered.map((r) => (
             <div key={r._id} className="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-3 dark:bg-slate-900 dark:border-slate-700">
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${r.priority === "high" ? "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" : r.priority === "medium" ? "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}><Clock size={16} /></div>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                bucketOf(r) === "overdue" ? "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" :
+                r.priority === "high" ? "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" :
+                r.priority === "medium" ? "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" :
+                "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+              }`}><Clock size={16} /></div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-slate-800 truncate dark:text-slate-200">{r.title}</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500">{fmtDate(r.date)}{r.status === "upcoming" ? ` · ${daysUntil(r.date) >= 0 ? `${daysUntil(r.date)} days away` : "overdue"}` : ""}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">
+                  {fmtDate(r.date)}
+                  {r.status === "upcoming" ? ` · ${daysUntil(r.date) >= 0 ? `${daysUntil(r.date)} days away` : `${Math.abs(daysUntil(r.date))} days overdue`}` : ""}
+                  {r.documentId?.fileName ? ` · ${r.documentId.fileName}` : ""}
+                </p>
               </div>
-              {r.status === "upcoming" && <button onClick={() => completeReminder(r._id)} className="text-xs border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg font-medium shrink-0 dark:border-slate-700 dark:hover:bg-slate-800/60">Mark done</button>}
+              <div className="flex items-center gap-2 shrink-0">
+                {r.documentId?._id && (
+                  <button onClick={() => openDoc?.(r.documentId._id)} title="Open linked document" className="p-1.5 text-slate-400 hover:text-teal-700 dark:hover:text-teal-400"><FileText size={15} /></button>
+                )}
+                {r.status === "upcoming" && (
+                  <button onClick={() => completeReminder(r._id)} title="Mark done" className="p-1.5 text-slate-400 hover:text-teal-700 dark:hover:text-teal-400"><CheckCircle2 size={16} /></button>
+                )}
+                <button onClick={() => removeReminder(r._id)} title="Delete reminder" className="p-1.5 text-slate-400 hover:text-rose-600"><Trash2 size={15} /></button>
+              </div>
             </div>
           ))}
         </div>

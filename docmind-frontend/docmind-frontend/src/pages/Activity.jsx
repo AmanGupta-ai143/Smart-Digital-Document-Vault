@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Upload, Sparkles, Users, Bell, Star, ShieldCheck, Archive, KeyRound, Activity as ActivityIcon } from "lucide-react";
+import { Upload, Sparkles, Users, Bell, Star, ShieldCheck, Archive, RotateCcw, KeyRound, Activity as ActivityIcon } from "lucide-react";
 import { fmtDate } from "../lib/format.js";
 import { Spinner, ErrorState } from "../components/ui.jsx";
 import { listActivity } from "../api/resources.js";
@@ -8,6 +8,7 @@ const ICONS = {
   document_uploaded: Upload,
   document_categorized: Sparkles,
   document_deleted: Archive,
+  document_restored: RotateCcw,
   contact_added: Users,
   contact_updated: Users,
   contact_deleted: Users,

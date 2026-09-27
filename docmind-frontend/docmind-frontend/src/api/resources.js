@@ -52,8 +52,8 @@ export async function listActivity(page = 1, limit = 30) {
 }
 
 /* Search */
-export async function unifiedSearch(q) {
-  return apiRequest(`/search${toQuery({ q })}`);
+export async function unifiedSearch(q, filters = {}) {
+  return apiRequest(`/search${toQuery({ q, ...filters })}`);
 }
 
 /* Notifications */

@@ -1,14 +1,16 @@
 import React, { useMemo, useState } from "react";
-import { Users, Plus, Search, Phone, Star, ShieldAlert } from "lucide-react";
+import { Users, Plus, Search, Phone, Star, ShieldAlert, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { CONTACT_CATEGORIES } from "../lib/constants.js";
 import { initialsOf } from "../lib/format.js";
-import { EmptyState, Spinner, ErrorState } from "../components/ui.jsx";
+import { EmptyState, Spinner, ErrorState, Modal } from "../components/ui.jsx";
 import { useContacts } from "../hooks/useContactsReminders.js";
 import { useToast } from "../context/ToastContext.jsx";
+import AddContactModal from "../components/AddContactModal.jsx";
 
-function ContactCard({ contact, onCall }) {
+function ContactCard({ contact, onCall, onEdit, onDelete }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <div className="bg-white border border-slate-200 hover:border-teal-200 rounded-xl p-4 flex items-center gap-3 dark:bg-slate-900 dark:border-slate-700">
+    <div className="relative bg-white border border-slate-200 hover:border-teal-200 rounded-xl p-4 flex items-center gap-3 dark:bg-slate-900 dark:border-slate-700">
       <div className="w-11 h-11 rounded-full bg-slate-800 text-white flex items-center justify-center font-serif text-sm shrink-0">{initialsOf(contact.name)}</div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-slate-800 truncate flex items-center gap-1.5 dark:text-slate-200">
@@ -17,15 +19,26 @@ function ContactCard({ contact, onCall }) {
         <p className="text-xs text-slate-400 truncate dark:text-slate-500">{contact.phoneNumber} · {contact.category}</p>
       </div>
       <button onClick={() => onCall(contact.name)} className="p-2 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100 shrink-0 dark:bg-teal-900/40"><Phone size={15} /></button>
+      <div className="relative shrink-0">
+        <button onClick={() => setMenuOpen((o) => !o)} className="p-2 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><MoreVertical size={15} /></button>
+        {menuOpen && (
+          <div className="absolute right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-10 w-36">
+            <button onClick={() => { setMenuOpen(false); onEdit(contact); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"><Pencil size={13} /> Edit</button>
+            <button onClick={() => { setMenuOpen(false); onDelete(contact); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"><Trash2 size={13} /> Delete</button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 export default function Contacts({ openAddContact }) {
-  const { contacts, loading, error, reload } = useContacts();
+  const { contacts, loading, error, reload, editContact, removeContact } = useContacts();
   const { showToast } = useToast();
   const [tab, setTab] = useState("all");
   const [query, setQuery] = useState("");
+  const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
 
   const filtered = useMemo(() => {
     return contacts.filter((c) => {
@@ -39,6 +52,16 @@ export default function Contacts({ openAddContact }) {
 
   const tabs = ["all", "favorites", "emergency", ...CONTACT_CATEGORIES];
   const emergency = contacts.filter((c) => c.isEmergencyContact);
+
+  const confirmDelete = async () => {
+    try {
+      await removeContact(deleting._id);
+      showToast("Contact deleted.");
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+    setDeleting(null);
+  };
 
   return (
     <div className="p-5 md:p-8 max-w-5xl mx-auto">
@@ -89,10 +112,28 @@ export default function Contacts({ openAddContact }) {
             <EmptyState icon={Users} title="Keep important people close" subtitle="Add your first important contact to see it here." actionLabel="Add Contact" onAction={openAddContact} />
           ) : (
             <div className="grid sm:grid-cols-2 gap-3">
-              {filtered.map((c) => <ContactCard key={c._id} contact={c} onCall={(n) => showToast(`Calling ${n}…`)} />)}
+              {filtered.map((c) => <ContactCard key={c._id} contact={c} onCall={(n) => showToast(`Calling ${n}…`)} onEdit={setEditing} onDelete={setDeleting} />)}
             </div>
           )}
         </>
+      )}
+
+      {editing && (
+        <AddContactModal
+          contact={editing}
+          onClose={() => setEditing(null)}
+          onSave={async (form) => { await editContact(editing._id, form); setEditing(null); showToast("Contact updated."); }}
+        />
+      )}
+
+      {deleting && (
+        <Modal title="Delete contact?" onClose={() => setDeleting(null)}>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">"{deleting.name}" will be permanently removed from your contacts.</p>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setDeleting(null)} className="text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2">Cancel</button>
+            <button onClick={confirmDelete} className="text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-lg px-4 py-2">Delete</button>
+          </div>
+        </Modal>
       )}
     </div>
   );

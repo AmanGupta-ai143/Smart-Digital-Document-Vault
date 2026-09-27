@@ -27,7 +27,22 @@ export async function updateDocument(id, patch) {
 }
 
 export async function deleteDocument(id) {
+  // Soft delete — backend moves the document to the recycle bin rather than
+  // destroying it immediately.
   return apiRequest(`/documents/${id}`, { method: "DELETE" });
+}
+
+export async function restoreDocument(id) {
+  const data = await apiRequest(`/documents/${id}/restore`, { method: "PATCH" });
+  return data.document;
+}
+
+export async function permanentlyDeleteDocument(id) {
+  return apiRequest(`/documents/${id}/permanent`, { method: "DELETE" });
+}
+
+export async function emptyRecycleBin() {
+  return apiRequest(`/documents/trash`, { method: "DELETE" });
 }
 
 export async function confirmDetectedDate(id, dateIndex, confirmed) {

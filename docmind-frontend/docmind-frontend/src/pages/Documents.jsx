@@ -1,14 +1,24 @@
 import React, { useState } from "react";
-import { FileText, Upload, Search, Filter, Grid3x3, List as ListIcon, Rows3, Star, Sparkles } from "lucide-react";
+import { FileText, Upload, Search, Filter, Grid3x3, List as ListIcon, Rows3, Star, Sparkles, AlertTriangle, Bot, Trash2, RotateCcw, XCircle } from "lucide-react";
 import { CATEGORY_META, FILE_ICON, DOC_CATEGORIES } from "../lib/constants.js";
-import { fmtDate, fmtBytes } from "../lib/format.js";
-import { Badge, EmptyState, Spinner, ErrorState } from "../components/ui.jsx";
+import { fmtDate, fmtBytes, daysUntil } from "../lib/format.js";
+import { Badge, EmptyState, Spinner, ErrorState, Modal } from "../components/ui.jsx";
 import { useDocuments } from "../hooks/useDocuments.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useToast } from "../context/ToastContext.jsx";
+import { emptyRecycleBin } from "../api/documents.js";
 
-function DocumentCard({ doc, view, onOpen, onToggleFavorite }) {
+function nextExpiry(doc) {
+  const dates = (doc.aiDetectedDates || []).filter((d) => d.date && daysUntil(d.date) >= -1);
+  if (!dates.length) return null;
+  return dates.reduce((soonest, d) => (daysUntil(d.date) < daysUntil(soonest.date) ? d : soonest));
+}
+
+function DocumentCard({ doc, view, onOpen, onToggleFavorite, onAskAI }) {
   const meta = CATEGORY_META[doc.category] || CATEGORY_META.Other;
   const FIcon = FILE_ICON[doc.fileType] || FileText;
+  const expiry = nextExpiry(doc);
+  const tags = (doc.tags && doc.tags.length ? doc.tags : doc.aiTags) || [];
 
   if (view === "compact") {
     // Denser than list: one slim row, minimal padding, no per-row card border —
@@ -32,6 +42,7 @@ function DocumentCard({ doc, view, onOpen, onToggleFavorite }) {
           <p className="text-sm font-medium text-slate-800 truncate dark:text-slate-200">{doc.fileName}</p>
           <p className="text-xs text-slate-400 dark:text-slate-500">{doc.category} · {fmtDate(doc.createdAt)} · {fmtBytes(doc.fileSizeBytes)}</p>
         </div>
+        {expiry && <span className="text-[11px] text-amber-700 font-medium bg-amber-50 px-2 py-0.5 rounded-full shrink-0 dark:bg-amber-900/30 dark:text-amber-400">⚠ {fmtDate(expiry.date)}</span>}
         {doc.isImportant && <Star size={15} className="text-amber-500 fill-amber-500 shrink-0" />}
       </button>
     );
@@ -40,19 +51,61 @@ function DocumentCard({ doc, view, onOpen, onToggleFavorite }) {
   return (
     <div className="bg-white border border-slate-200 hover:shadow-md hover:border-teal-200 rounded-xl overflow-hidden transition-all dark:bg-slate-900 dark:border-slate-700">
       <div className={`h-1.5 ${meta.bg}`} />
-      <button onClick={() => onOpen(doc._id)} className="w-full text-left p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${meta.bg}`}><FIcon size={18} className={meta.color} /></div>
-          <span onClick={(e) => { e.stopPropagation(); onToggleFavorite(doc); }} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
-            <Star size={15} className={doc.isFavorite ? "text-amber-500 fill-amber-500" : "text-slate-300"} />
-          </span>
-        </div>
-        <p className="text-sm font-medium text-slate-800 leading-snug line-clamp-2 mb-1.5 dark:text-slate-200">{doc.fileName}</p>
-        <p className="text-xs text-slate-400 mb-3 dark:text-slate-500">{fmtDate(doc.createdAt)} · {fmtBytes(doc.fileSizeBytes)}</p>
-        <div className="flex items-center justify-between">
-          <Badge tone="slate">{doc.category}</Badge>
+      <div className="p-4">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => onOpen(doc._id)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(doc._id); } }}
+          className="w-full text-left cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 rounded-lg"
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${meta.bg}`}><FIcon size={18} className={meta.color} /></div>
+            <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFavorite(doc); }} aria-label={doc.isFavorite ? "Remove from favorites" : "Add to favorites"} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600">
+              <Star size={15} className={doc.isFavorite ? "text-amber-500 fill-amber-500" : "text-slate-300"} />
+            </button>
+          </div>
+          <p className="text-sm font-medium text-slate-800 leading-snug line-clamp-2 mb-1.5 dark:text-slate-200">{doc.fileName}</p>
+          <p className="text-xs text-slate-400 mb-2 dark:text-slate-500">{fmtDate(doc.createdAt)} · {fmtBytes(doc.fileSizeBytes)}</p>
+          <div className="flex items-center gap-1.5 flex-wrap mb-3">
+            <Badge tone="slate">{doc.category}</Badge>
+            {tags.slice(0, 2).map((t) => (
+              <span key={t} className="text-[11px] text-slate-500 dark:text-slate-400">#{t}</span>
+            ))}
+          </div>
+          {expiry && (
+            <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1 mb-3">
+              <AlertTriangle size={11} /> Expires {fmtDate(expiry.date)}
+            </p>
+          )}
           {doc.aiSummary && <span className="text-[11px] text-teal-700 font-medium flex items-center gap-1"><Sparkles size={11} /> AI ready</span>}
         </div>
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <button onClick={() => onOpen(doc._id)} className="flex-1 text-xs font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800">Open</button>
+          <button onClick={() => onAskAI(doc)} className="flex-1 text-xs font-medium text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-900 rounded-lg py-1.5 hover:bg-teal-50 dark:hover:bg-teal-900/30 flex items-center justify-center gap-1">
+            <Bot size={12} /> Ask AI
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrashRow({ doc, onRestore, onPermanentDelete }) {
+  const meta = CATEGORY_META[doc.category] || CATEGORY_META.Other;
+  const FIcon = FILE_ICON[doc.fileType] || FileText;
+  return (
+    <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-4 py-3 dark:bg-slate-900 dark:border-slate-700">
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${meta.bg}`}><FIcon size={16} className={meta.color} /></div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-slate-800 truncate dark:text-slate-200">{doc.fileName}</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500">Deleted {doc.deletedAt ? fmtDate(doc.deletedAt) : ""}</p>
+      </div>
+      <button onClick={() => onRestore(doc)} className="flex items-center gap-1 text-xs font-medium text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-900 rounded-lg px-3 py-1.5 hover:bg-teal-50 dark:hover:bg-teal-900/30 shrink-0">
+        <RotateCcw size={12} /> Restore
+      </button>
+      <button onClick={() => onPermanentDelete(doc)} className="flex items-center gap-1 text-xs font-medium text-rose-600 border border-rose-200 dark:border-rose-900 rounded-lg px-3 py-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 shrink-0">
+        <XCircle size={12} /> Delete Permanently
       </button>
     </div>
   );
@@ -60,8 +113,9 @@ function DocumentCard({ doc, view, onOpen, onToggleFavorite }) {
 
 const VALID_VIEWS = ["grid", "list", "compact"];
 
-export default function MyDocuments({ openDoc, openUpload }) {
+export default function MyDocuments({ openDoc, openUpload, setPage, setAssistantDoc }) {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [tab, setTab] = useState("all");
   // Seed from the user's saved Settings > Document Preferences > Default view,
   // falling back to grid if they've never set one.
@@ -71,9 +125,11 @@ export default function MyDocuments({ openDoc, openUpload }) {
   const [category, setCategory] = useState("");
   const [query, setQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null); // { type: "one" | "all", doc? }
 
   const filters = {
     archived: tab === "archived" ? "true" : "false",
+    deleted: tab === "trash" ? "true" : undefined,
     important: tab === "important" ? "true" : undefined,
     favorite: tab === "favorites" ? "true" : undefined,
     category: category || undefined,
@@ -81,7 +137,28 @@ export default function MyDocuments({ openDoc, openUpload }) {
     sort: tab === "recent" ? "recent" : undefined,
   };
 
-  const { documents, loading, error, reload, toggleFavorite } = useDocuments(filters);
+  const { documents, loading, error, reload, toggleFavorite, moveToTrash, restoreDocument, permanentlyDelete } = useDocuments(filters);
+
+  const askAI = (doc) => {
+    setAssistantDoc?.(doc._id);
+    setPage?.("assistant");
+  };
+
+  const confirmPermanentDelete = async () => {
+    if (confirmTarget?.type === "one") {
+      await permanentlyDelete(confirmTarget.doc);
+      showToast("Document permanently deleted.");
+    } else if (confirmTarget?.type === "all") {
+      try {
+        const res = await emptyRecycleBin();
+        showToast(`Recycle bin emptied (${res.count} document${res.count === 1 ? "" : "s"}).`);
+        reload();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+    setConfirmTarget(null);
+  };
 
   const tabs = [
     { key: "all", label: "All Documents" },
@@ -89,6 +166,7 @@ export default function MyDocuments({ openDoc, openUpload }) {
     { key: "important", label: "Important" },
     { key: "favorites", label: "Favorites" },
     { key: "archived", label: "Archived" },
+    { key: "trash", label: "Recycle Bin" },
   ];
 
   const viewButtons = [
@@ -104,9 +182,17 @@ export default function MyDocuments({ openDoc, openUpload }) {
           <h1 className="font-serif text-2xl text-slate-900 dark:text-slate-100">My Documents</h1>
           <p className="text-slate-500 text-sm mt-1 dark:text-slate-400">Organize, search, and manage everything in one place.</p>
         </div>
-        <button onClick={openUpload} className="flex items-center gap-1.5 bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium px-4 py-2.5 rounded-lg self-start transition-colors">
-          <Upload size={15} /> Upload Document
-        </button>
+        {tab === "trash" ? (
+          documents.length > 0 && (
+            <button onClick={() => setConfirmTarget({ type: "all" })} className="flex items-center gap-1.5 border border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-sm font-medium px-4 py-2.5 rounded-lg self-start transition-colors">
+              <Trash2 size={15} /> Empty Recycle Bin
+            </button>
+          )
+        ) : (
+          <button onClick={openUpload} className="flex items-center gap-1.5 bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium px-4 py-2.5 rounded-lg self-start transition-colors">
+            <Upload size={15} /> Upload Document
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
@@ -153,10 +239,20 @@ export default function MyDocuments({ openDoc, openUpload }) {
       ) : error ? (
         <ErrorState message={error} onRetry={reload} />
       ) : documents.length === 0 ? (
-        <EmptyState icon={FileText} title="No documents here yet" subtitle="Try a different filter, or upload your first document and let DocMind AI organize it." actionLabel="Upload Document" onAction={openUpload} />
+        tab === "trash" ? (
+          <EmptyState icon={Trash2} title="Recycle bin is empty" subtitle="Deleted documents will appear here before they're permanently removed." />
+        ) : (
+          <EmptyState icon={FileText} title="No documents here yet" subtitle="Try a different filter, or upload your first document and let DocMind AI organize it." actionLabel="Upload Document" onAction={openUpload} />
+        )
+      ) : tab === "trash" ? (
+        <div className="space-y-2">
+          {documents.map((d) => (
+            <TrashRow key={d._id} doc={d} onRestore={restoreDocument} onPermanentDelete={(doc) => setConfirmTarget({ type: "one", doc })} />
+          ))}
+        </div>
       ) : view === "grid" ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {documents.map((d) => <DocumentCard key={d._id} doc={d} view="grid" onOpen={openDoc} onToggleFavorite={toggleFavorite} />)}
+          {documents.map((d) => <DocumentCard key={d._id} doc={d} view="grid" onOpen={openDoc} onToggleFavorite={toggleFavorite} onAskAI={askAI} />)}
         </div>
       ) : view === "compact" ? (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
@@ -166,6 +262,20 @@ export default function MyDocuments({ openDoc, openUpload }) {
         <div className="space-y-2">
           {documents.map((d) => <DocumentCard key={d._id} doc={d} view="list" onOpen={openDoc} onToggleFavorite={toggleFavorite} />)}
         </div>
+      )}
+
+      {confirmTarget && (
+        <Modal title={confirmTarget.type === "all" ? "Empty recycle bin?" : "Delete permanently?"} onClose={() => setConfirmTarget(null)}>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
+            {confirmTarget.type === "all"
+              ? `This will permanently delete all ${documents.length} document${documents.length === 1 ? "" : "s"} in your recycle bin. This can't be undone.`
+              : `"${confirmTarget.doc.fileName}" will be permanently deleted. This can't be undone.`}
+          </p>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setConfirmTarget(null)} className="text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2">Cancel</button>
+            <button onClick={confirmPermanentDelete} className="text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-lg px-4 py-2">Delete Permanently</button>
+          </div>
+        </Modal>
       )}
     </div>
   );

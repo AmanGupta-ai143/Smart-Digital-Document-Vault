@@ -51,5 +51,32 @@ export function useDocuments(filters) {
     }
   };
 
-  return { documents, setDocuments, loading, error, reload: load, toggleFavorite, toggleImportant, toggleArchived };
+  const moveToTrash = async (doc) => {
+    setDocuments((docs) => docs.filter((d) => d._id !== doc._id));
+    try {
+      await docsApi.deleteDocument(doc._id);
+    } catch {
+      load(); // reload to restore accurate state on failure
+    }
+  };
+
+  const restoreDocument = async (doc) => {
+    setDocuments((docs) => docs.filter((d) => d._id !== doc._id));
+    try {
+      await docsApi.restoreDocument(doc._id);
+    } catch {
+      load();
+    }
+  };
+
+  const permanentlyDelete = async (doc) => {
+    setDocuments((docs) => docs.filter((d) => d._id !== doc._id));
+    try {
+      await docsApi.permanentlyDeleteDocument(doc._id);
+    } catch {
+      load();
+    }
+  };
+
+  return { documents, setDocuments, loading, error, reload: load, toggleFavorite, toggleImportant, toggleArchived, moveToTrash, restoreDocument, permanentlyDelete };
 }

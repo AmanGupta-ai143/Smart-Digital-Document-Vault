@@ -9,6 +9,7 @@ const activityLogSchema = new mongoose.Schema(
         "document_uploaded",
         "document_categorized",
         "document_deleted",
+        "document_restored",
         "contact_added",
         "contact_updated",
         "contact_deleted",

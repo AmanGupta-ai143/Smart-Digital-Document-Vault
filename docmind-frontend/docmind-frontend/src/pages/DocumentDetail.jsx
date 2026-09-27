@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Sparkles, Star, BadgeCheck, Download, Archive, Bot, FileText } from "lucide-react";
+import { ArrowLeft, Sparkles, Star, BadgeCheck, Download, Archive, Bot, FileText, Trash2 } from "lucide-react";
 import { CATEGORY_META, FILE_ICON } from "../lib/constants.js";
 import { fmtDate, fmtBytes } from "../lib/format.js";
-import { Badge, Spinner, ErrorState } from "../components/ui.jsx";
+import { Badge, Spinner, ErrorState, Modal } from "../components/ui.jsx";
 import * as docsApi from "../api/documents.js";
 import { useToast } from "../context/ToastContext.jsx";
 
@@ -12,6 +12,8 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tab, setTab] = useState("overview");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [tagInput, setTagInput] = useState("");
 
   const load = () => {
     setLoading(true);
@@ -41,6 +43,17 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
     }
   };
 
+  const moveToTrash = async () => {
+    try {
+      await docsApi.deleteDocument(docId);
+      showToast("Document moved to recycle bin.");
+      onBack();
+    } catch (e) {
+      showToast(e.message, "error");
+    }
+    setConfirmDelete(false);
+  };
+
   if (loading) return <div className="p-8"><Spinner label="Loading document…" /></div>;
   if (error) return <div className="p-8"><ErrorState message={error} onRetry={load} /></div>;
   if (!doc) return null;
@@ -53,11 +66,20 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
       <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-5 dark:text-slate-400 dark:hover:text-slate-200"><ArrowLeft size={15} /> Back</button>
 
       <div className="grid md:grid-cols-5 gap-6">
-        <div className="md:col-span-2 bg-white border border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center h-72 md:h-full dark:bg-slate-900 dark:border-slate-700">
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${meta.bg}`}><FIcon size={28} className={meta.color} /></div>
-          <p className="text-sm font-medium text-slate-800 px-2 dark:text-slate-200">{doc.fileName}</p>
-          <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{doc.fileType?.toUpperCase()} · {fmtBytes(doc.fileSizeBytes)}</p>
-          <a href={doc.cloudFileUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-700 font-medium mt-4">Open original file</a>
+        <div className="md:col-span-2 bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col items-center justify-center text-center h-72 md:h-full dark:bg-slate-900 dark:border-slate-700">
+          {doc.fileType === "pdf" ? (
+            <iframe src={doc.cloudFileUrl} title={doc.fileName} className="w-full h-full border-0" />
+          ) : doc.fileType === "jpg" || doc.fileType === "png" ? (
+            <img src={doc.cloudFileUrl} alt={doc.fileName} className="w-full h-full object-contain bg-slate-50 dark:bg-slate-800" />
+          ) : (
+            <div className="p-6 flex flex-col items-center">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${meta.bg}`}><FIcon size={28} className={meta.color} /></div>
+              <p className="text-sm font-medium text-slate-800 px-2 dark:text-slate-200">{doc.fileName}</p>
+              <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{doc.fileType?.toUpperCase()} · {fmtBytes(doc.fileSizeBytes)}</p>
+              <p className="text-xs text-slate-400 mt-2 dark:text-slate-500">Preview isn't available for this file type.</p>
+              <a href={doc.cloudFileUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-700 font-medium mt-4">Open original file</a>
+            </div>
+          )}
         </div>
 
         <div className="md:col-span-3">
@@ -94,14 +116,32 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
                   </ul>
                 </div>
               )}
-              {(doc.tags?.length > 0 || doc.aiTags?.length > 0) && (
-                <div>
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 dark:text-slate-500">Tags</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {[...(doc.tags || []), ...(doc.aiTags || [])].map((t) => <Badge key={t} tone="teal">#{t}</Badge>)}
-                  </div>
+              <div>
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 dark:text-slate-500">Tags</p>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {(doc.tags || []).map((t) => (
+                    <span key={t} className="inline-flex items-center gap-1 text-xs bg-teal-50 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300 px-2 py-1 rounded-full">
+                      #{t}
+                      <button onClick={() => update({ tags: doc.tags.filter((x) => x !== t) })} className="hover:text-rose-600" title="Remove tag">×</button>
+                    </span>
+                  ))}
+                  {(doc.tags || []).length === 0 && <p className="text-xs text-slate-400 dark:text-slate-500">No tags yet.</p>}
                 </div>
-              )}
+                <form onSubmit={(e) => { e.preventDefault(); const v = tagInput.trim().toLowerCase(); if (v && !doc.tags?.includes(v)) update({ tags: [...(doc.tags || []), v] }); setTagInput(""); }} className="flex gap-1.5">
+                  <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Add a tag…" className="flex-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-teal-600 dark:bg-slate-800 dark:text-slate-100" />
+                  <button type="submit" className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg font-medium">Add</button>
+                </form>
+                {doc.aiTags?.filter((t) => !doc.tags?.includes(t)).length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-1 flex items-center gap-1"><Sparkles size={10} /> AI suggested</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {doc.aiTags.filter((t) => !doc.tags?.includes(t)).map((t) => (
+                        <button key={t} onClick={() => update({ tags: [...(doc.tags || []), t] })} className="text-xs border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-full hover:border-teal-400 hover:text-teal-700">+ #{t}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               {doc.aiDetectedDates?.filter((d) => !d.confirmed).map((d, i) => (
                 <div key={i} className="bg-amber-50 border border-amber-100 rounded-lg p-4">
                   <p className="text-xs font-medium text-amber-800 uppercase tracking-wide mb-1">AI-detected date</p>
@@ -118,7 +158,7 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
 
           {tab === "details" && (
             <div className="grid grid-cols-2 gap-4 text-sm">
-              {[["File type", doc.fileType?.toUpperCase()], ["File size", fmtBytes(doc.fileSizeBytes)], ["Category", doc.category], ["Uploaded", fmtDate(doc.createdAt)], ["Storage", "Cloud vault"], ["Status", "Encrypted"]].map(([k, v]) => (
+              {[["File type", doc.fileType?.toUpperCase()], ["File size", fmtBytes(doc.fileSizeBytes)], ["Category", doc.category], ["Uploaded", fmtDate(doc.createdAt)], ["Storage", "Cloud vault"], ["AI processing", doc.aiProcessingStatus === "completed" ? "Completed" : doc.aiProcessingStatus === "failed" ? "Failed" : "Processing"]].map(([k, v]) => (
                 <div key={k} className="border border-slate-100 rounded-lg p-3 dark:border-slate-800"><p className="text-xs text-slate-400 dark:text-slate-500">{k}</p><p className="font-medium text-slate-800 dark:text-slate-200">{v}</p></div>
               ))}
             </div>
@@ -143,9 +183,24 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
             <button onClick={() => update({ isArchived: !doc.isArchived })} className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60">
               <Archive size={14} /> {doc.isArchived ? "Unarchive" : "Archive"}
             </button>
+            <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 text-sm border border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-900/20 px-3 py-2 rounded-lg">
+              <Trash2 size={14} /> Delete
+            </button>
           </div>
         </div>
       </div>
+
+      {confirmDelete && (
+        <Modal title="Move to recycle bin?" onClose={() => setConfirmDelete(false)}>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
+            "{doc.fileName}" will be moved to the recycle bin. You can restore it later, or delete it permanently from there.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setConfirmDelete(false)} className="text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2">Cancel</button>
+            <button onClick={moveToTrash} className="text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-lg px-4 py-2">Move to Recycle Bin</button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

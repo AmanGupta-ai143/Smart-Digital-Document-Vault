@@ -31,7 +31,13 @@ export function useContacts() {
     await api.deleteContact(id).catch(() => load());
   };
 
-  return { contacts, loading, error, reload: load, addContact, removeContact };
+  const editContact = async (id, patch) => {
+    const updated = await api.updateContact(id, patch);
+    setContacts((cs) => cs.map((c) => (c._id === id ? updated : c)));
+    return updated;
+  };
+
+  return { contacts, loading, error, reload: load, addContact, removeContact, editContact };
 }
 
 export function useReminders() {
@@ -68,5 +74,10 @@ export function useReminders() {
     }
   };
 
-  return { reminders, loading, error, reload: load, addReminder, completeReminder };
+  const removeReminder = async (id) => {
+    setReminders((rs) => rs.filter((r) => r._id !== id));
+    await api.deleteReminder(id).catch(() => load());
+  };
+
+  return { reminders, loading, error, reload: load, addReminder, completeReminder, removeReminder };
 }

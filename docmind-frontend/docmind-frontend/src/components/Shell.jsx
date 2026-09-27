@@ -68,7 +68,7 @@ export function Sidebar({ page, setPage, collapsed, setCollapsed, onLogout, user
         <button onClick={onLogout} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-rose-600 dark:hover:text-rose-400 ${collapsed ? "justify-center px-0" : ""}`}>
           <LogOut size={16} /> {!collapsed && "Log out"}
         </button>
-        <button onClick={() => setCollapsed((c) => !c)} className="w-full flex items-center justify-center py-1 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400">
+        <button onClick={() => setCollapsed((c) => !c)} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} className="w-full flex items-center justify-center py-1 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 rounded">
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
       </div>
@@ -117,15 +117,15 @@ export function TopBar({ user, onSearchOpen, onUpload, onNotifOpen, onMenuOpen, 
 
   return (
     <header className="sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 h-16 flex items-center gap-3 px-4 md:px-6">
-      <button onClick={onMenuOpen} className="md:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400"><Menu size={20} /></button>
-      <button onClick={onSearchOpen} className="flex-1 max-w-md flex items-center gap-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500 transition-colors">
+      <button onClick={onMenuOpen} aria-label="Open navigation menu" className="md:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 rounded"><Menu size={20} /></button>
+      <button onClick={onSearchOpen} aria-label="Search documents, contacts, and reminders" className="flex-1 max-w-md flex items-center gap-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600">
         <Search size={16} /> Search documents, contacts, tags…
       </button>
       <div className="ml-auto flex items-center gap-2">
-        <button onClick={onUpload} className="hidden sm:flex items-center gap-1.5 bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium px-3.5 py-2 rounded-lg transition-colors">
+        <button onClick={onUpload} className="hidden sm:flex items-center gap-1.5 bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium px-3.5 py-2 rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-800">
           <Upload size={15} /> Upload
         </button>
-        <button onClick={onNotifOpen} className="relative p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400">
+        <button onClick={onNotifOpen} aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"} className="relative p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600">
           <Bell size={19} />
           {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full ring-2 ring-white dark:ring-slate-900" />}
         </button>

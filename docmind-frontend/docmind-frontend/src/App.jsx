@@ -24,8 +24,10 @@ import AddContactModal from "./components/AddContactModal.jsx";
 import AddReminderModal from "./components/AddReminderModal.jsx";
 import SearchPanel from "./components/SearchPanel.jsx";
 import NotificationsPanel from "./components/NotificationsPanel.jsx";
+import Onboarding from "./components/Onboarding.jsx";
 
 import { Spinner } from "./components/ui.jsx";
+import { getStorage } from "./api/resources.js";
 
 export default function App() {
   const { user, status, logout } = useAuth();
@@ -47,6 +49,15 @@ export default function App() {
   const { addContact } = useContacts();
   const { addReminder } = useReminders();
   const { documents: reminderDocs } = useDocuments({ archived: "false", limit: 100 });
+
+  const [storagePct, setStoragePct] = useState(0);
+  React.useEffect(() => {
+    if (status === "authenticated") {
+      getStorage()
+        .then((s) => setStoragePct(s.limitBytes ? Math.min(100, Math.round((s.usedBytes / s.limitBytes) * 100)) : 0))
+        .catch(() => {});
+    }
+  }, [status]);
 
   // Still loading a stored session — avoid flashing the landing page.
   if (status === "loading") {
@@ -70,7 +81,7 @@ export default function App() {
         setCollapsed={setCollapsed}
         onLogout={logout}
         user={user}
-        storagePct={42}
+        storagePct={storagePct}
       />
 
       <div className="flex-1 min-w-0 pb-16 md:pb-0">
@@ -78,17 +89,21 @@ export default function App() {
         <EmailVerificationBanner />
 
         {page === "dashboard" && <Dashboard setPage={setPage} openDoc={openDoc} openUpload={() => setShowUpload(true)} />}
-        {page === "documents" && <MyDocuments openDoc={openDoc} openUpload={() => setShowUpload(true)} />}
+        {page === "documents" && <MyDocuments openDoc={openDoc} openUpload={() => setShowUpload(true)} setPage={setPage} setAssistantDoc={setAssistantDoc} />}
         {page === "documentDetail" && selectedDocId && <DocumentDetail docId={selectedDocId} onBack={() => setPage("documents")} setPage={setPage} setAssistantDoc={setAssistantDoc} />}
-        {page === "assistant" && <AIAssistant initialDocId={assistantDoc} />}
+        {page === "assistant" && <AIAssistant initialDocId={assistantDoc} openDoc={openDoc} />}
         {page === "contacts" && <Contacts openAddContact={() => setShowAddContact(true)} />}
-        {page === "reminders" && <Reminders openAddReminder={() => setShowAddReminder(true)} />}
+        {page === "reminders" && <Reminders openAddReminder={() => setShowAddReminder(true)} openDoc={openDoc} />}
         {page === "activity" && <ActivityPage />}
         {page === "security" && <SecurityCenter />}
         {page === "settings" && <Settings setPage={setPage} />}
       </div>
 
       <MobileNav page={page === "documentDetail" ? "documents" : page} setPage={setPage} onMore={() => setMobileMore(true)} />
+
+      {status === "authenticated" && user && !user.preferences?.hasSeenOnboarding && (
+        <Onboarding onFinish={() => {}} onUpload={() => setShowUpload(true)} />
+      )}
 
       {showUpload && (
         <UploadModal
