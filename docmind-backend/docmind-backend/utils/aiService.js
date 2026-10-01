@@ -20,11 +20,13 @@ async function generateJSON(prompt, maxOutputTokens) {
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      maxOutputTokens,
+      maxOutputTokens: maxOutputTokens * 4, // leave room for model "thinking" tokens
+      thinkingConfig: { thinkingBudget: 0 }, // not needed for this task
     },
   });
 
-  const text = response.text || "{}";
+  const text = response.text;
+  if (!text) throw new Error("AI returned an empty response.");
   return JSON.parse(text.replace(/```json|```/g, "").trim());
 }
 
