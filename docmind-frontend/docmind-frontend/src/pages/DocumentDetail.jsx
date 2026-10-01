@@ -3,6 +3,7 @@ import { ArrowLeft, Sparkles, Star, BadgeCheck, Download, Archive, Bot, FileText
 import { CATEGORY_META, FILE_ICON } from "../lib/constants.js";
 import { fmtDate, fmtBytes } from "../lib/format.js";
 import { Badge, Spinner, ErrorState, Modal } from "../components/ui.jsx";
+import PdfViewer from "../components/PdfViewer.jsx";
 import * as docsApi from "../api/documents.js";
 import { useToast } from "../context/ToastContext.jsx";
 
@@ -66,18 +67,23 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
       <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-5 dark:text-slate-400 dark:hover:text-slate-200"><ArrowLeft size={15} /> Back</button>
 
       <div className="grid md:grid-cols-5 gap-6">
-        <div className="md:col-span-2 bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col items-center justify-center text-center h-72 md:h-full dark:bg-slate-900 dark:border-slate-700">
+        {/* Left column: file preview */}
+        <div className="md:col-span-2">
           {doc.fileType === "pdf" ? (
-            <iframe src={doc.cloudFileUrl} title={doc.fileName} className="w-full h-full border-0" />
-          ) : doc.fileType === "jpg" || doc.fileType === "png" ? (
-            <img src={doc.cloudFileUrl} alt={doc.fileName} className="w-full h-full object-contain bg-slate-50 dark:bg-slate-800" />
+            <PdfViewer url={doc.cloudFileUrl} title={doc.fileName} />
           ) : (
-            <div className="p-6 flex flex-col items-center">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${meta.bg}`}><FIcon size={28} className={meta.color} /></div>
-              <p className="text-sm font-medium text-slate-800 px-2 dark:text-slate-200">{doc.fileName}</p>
-              <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{doc.fileType?.toUpperCase()} · {fmtBytes(doc.fileSizeBytes)}</p>
-              <p className="text-xs text-slate-400 mt-2 dark:text-slate-500">Preview isn't available for this file type.</p>
-              <a href={doc.cloudFileUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-700 font-medium mt-4">Open original file</a>
+            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col items-center justify-center text-center h-72 md:h-full dark:bg-slate-900 dark:border-slate-700">
+              {doc.fileType === "jpg" || doc.fileType === "png" ? (
+                <img src={doc.cloudFileUrl} alt={doc.fileName} className="w-full h-full object-contain bg-slate-50 dark:bg-slate-800" />
+              ) : (
+                <div className="p-6 flex flex-col items-center">
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${meta.bg}`}><FIcon size={28} className={meta.color} /></div>
+                  <p className="text-sm font-medium text-slate-800 px-2 dark:text-slate-200">{doc.fileName}</p>
+                  <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{doc.fileType?.toUpperCase()} · {fmtBytes(doc.fileSizeBytes)}</p>
+                  <p className="text-xs text-slate-400 mt-2 dark:text-slate-500">Preview isn't available for this file type.</p>
+                  <a href={doc.cloudFileUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-700 font-medium mt-4">Open original file</a>
+                </div>
+              )}
             </div>
           )}
         </div>
