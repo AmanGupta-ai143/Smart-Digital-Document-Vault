@@ -14,9 +14,20 @@ const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
  * (more reliable than asking nicely in the prompt). Falls back to stripping
  * markdown fences in case the model adds them anyway.
  */
-async function generateJSON(prompt, maxOutputTokens) {
+const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash-lite";
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Gemini returns 503 (overloaded) or 429 (rate limited) during busy periods;
+// both are temporary, so they are worth retrying instead of failing the user.
+function isTemporaryError(err) {
+  const text = `${err?.status || ""} ${err?.message || ""}`;
+  return /\b(503|429)\b|UNAVAILABLE|RESOURCE_EXHAUSTED|overloaded|high demand/i.test(text);
+}
+
+async function callModel(model, prompt, maxOutputTokens) {
   const response = await ai.models.generateContent({
-    model: MODEL,
+    model,
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -28,6 +39,36 @@ async function generateJSON(prompt, maxOutputTokens) {
   const text = response.text;
   if (!text) throw new Error("AI returned an empty response.");
   return JSON.parse(text.replace(/```json|```/g, "").trim());
+}
+
+/**
+ * Calls Gemini with a prompt and forces a JSON response via responseMimeType.
+ * If the main model is overloaded it retries with a short backoff, then falls
+ * back to a lighter model, so a busy moment on Google's side does not break
+ * the assistant.
+ */
+async function generateJSON(prompt, maxOutputTokens) {
+  const attempts = [
+    { model: MODEL, wait: 0 },
+    { model: MODEL, wait: 1500 },
+    { model: FALLBACK_MODEL, wait: 1000 },
+    { model: FALLBACK_MODEL, wait: 2500 },
+  ];
+
+  let lastError;
+  for (const { model, wait } of attempts) {
+    if (wait) await sleep(wait);
+    try {
+      return await callModel(model, prompt, maxOutputTokens);
+    } catch (err) {
+      lastError = err;
+      if (!isTemporaryError(err)) throw err;
+      console.warn(`[ai] ${model} temporarily unavailable, retrying...`);
+    }
+  }
+
+  console.error("[ai] All attempts failed:", lastError?.message);
+  throw new Error("The AI service is very busy right now. Please try again in a minute.");
 }
 
 /**
