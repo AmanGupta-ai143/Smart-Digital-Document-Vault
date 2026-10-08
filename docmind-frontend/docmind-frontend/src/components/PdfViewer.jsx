@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Maximize2, Minimize2, PanelRight, X, ExternalLink } from "lucide-react";
+import { Maximize2, Minimize2, PanelRight, X, ExternalLink, FileText } from "lucide-react";
 
 export default function PdfViewer({ url, title = "Document" }) {
   const [mode, setMode] = useState("inline"); // inline | half | full
@@ -16,6 +16,23 @@ export default function PdfViewer({ url, title = "Document" }) {
       document.body.style.overflow = prevOverflow;
     };
   }, [mode]);
+
+  // Phones can't show a PDF inside a page, so they get a clean card with an Open button
+  // instead of the browser's cut-off placeholder.
+  const isPhone = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isPhone) {
+    return (
+      <div className="flex flex-col items-center text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-8">
+        <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-900/30 flex items-center justify-center mb-4"><FileText size={30} /></div>
+        <p className="text-sm font-medium text-slate-800 dark:text-slate-100 break-all max-w-full">{title}</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 mb-5">PDF document</p>
+        <a href={url} target="_blank" rel="noreferrer" className="w-full bg-teal-700 hover:bg-teal-800 text-white py-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2">
+          <ExternalLink size={16} /> Open PDF
+        </a>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">Opens in your phone's PDF viewer.</p>
+      </div>
+    );
+  }
 
   const frameClass = {
     inline: "h-full rounded-xl",

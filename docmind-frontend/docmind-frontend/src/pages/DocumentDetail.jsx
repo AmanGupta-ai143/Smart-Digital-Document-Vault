@@ -63,12 +63,12 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
   const FIcon = FILE_ICON[doc.fileType] || FileText;
 
   return (
-    <div className="p-5 md:p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-5 md:p-8 max-w-5xl mx-auto">
       <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-5 dark:text-slate-400 dark:hover:text-slate-200"><ArrowLeft size={15} /> Back</button>
 
-      <div className="grid md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         {/* Left column: file preview */}
-        <div className="md:col-span-2">
+        <div className="min-w-0 md:col-span-2">
           {doc.fileType === "pdf" ? (
             <PdfViewer url={doc.cloudFileUrl} title={doc.fileName} />
           ) : (
@@ -78,7 +78,7 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
               ) : (
                 <div className="p-6 flex flex-col items-center">
                   <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${meta.bg}`}><FIcon size={28} className={meta.color} /></div>
-                  <p className="text-sm font-medium text-slate-800 px-2 dark:text-slate-200">{doc.fileName}</p>
+                  <p className="text-sm font-medium text-slate-800 px-2 break-all dark:text-slate-200">{doc.fileName}</p>
                   <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{doc.fileType?.toUpperCase()} · {fmtBytes(doc.fileSizeBytes)}</p>
                   <p className="text-xs text-slate-400 mt-2 dark:text-slate-500">Preview isn't available for this file type.</p>
                   <a href={doc.cloudFileUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-700 font-medium mt-4">Open original file</a>
@@ -88,9 +88,9 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
           )}
         </div>
 
-        <div className="md:col-span-3">
-          <h1 className="font-serif text-xl text-slate-900 leading-snug pr-4 mb-1 dark:text-slate-100">{doc.fileName}</h1>
-          <div className="flex items-center gap-2 mb-5">
+        <div className="min-w-0 md:col-span-3">
+          <h1 className="font-serif text-xl text-slate-900 leading-snug pr-4 mb-1 break-words dark:text-slate-100">{doc.fileName}</h1>
+          <div className="flex flex-wrap items-center gap-2 mb-5">
             <Badge tone="slate">{doc.category}</Badge>
             {doc.isImportant && <Badge tone="amber">Important</Badge>}
             <span className="text-xs text-slate-400 dark:text-slate-500">Uploaded {fmtDate(doc.createdAt)}</span>
