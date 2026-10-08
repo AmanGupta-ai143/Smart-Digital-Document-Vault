@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema(
     emailVerified: { type: Boolean, default: false },
     emailVerificationCodeHash: { type: String, select: false },
     emailVerificationExpires: { type: Date, select: false },
+    // Password reset — 6-digit emailed code, stored only as a hash
+    passwordResetCodeHash: { type: String, select: false },
+    passwordResetExpires: { type: Date, select: false },
+    passwordResetAttempts: { type: Number, default: 0, select: false },
     twoFactorSecret: { type: String, select: false },
     pendingTwoFactorSecret: { type: String, select: false },
 
@@ -115,6 +119,21 @@ userSchema.methods.verifyEmailCode = async function (submittedCode) {
   return bcrypt.compare(submittedCode, this.emailVerificationCodeHash);
 };
 
+userSchema.methods.setPasswordResetCode = async function () {
+  const code = require("crypto").randomInt(100000, 1000000).toString();
+  this.passwordResetCodeHash = await bcrypt.hash(code, 10);
+  this.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000);
+  this.passwordResetAttempts = 0;
+  return code;
+};
+
+userSchema.methods.verifyPasswordResetCode = async function (submittedCode) {
+  if (!this.passwordResetCodeHash || !this.passwordResetExpires) return false;
+  if (this.passwordResetExpires < new Date()) return false;
+  if ((this.passwordResetAttempts || 0) >= 5) return false;
+  return bcrypt.compare(submittedCode, this.passwordResetCodeHash);
+};
+
 userSchema.methods.toSafeJSON = function () {
   const obj = this.toObject();
   delete obj.passwordHash;
@@ -122,6 +141,9 @@ userSchema.methods.toSafeJSON = function () {
   delete obj.devices;
   delete obj.emailVerificationCodeHash;
   delete obj.emailVerificationExpires;
+  delete obj.passwordResetCodeHash;
+  delete obj.passwordResetExpires;
+  delete obj.passwordResetAttempts;
   return obj;
 };
 

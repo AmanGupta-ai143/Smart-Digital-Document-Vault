@@ -80,3 +80,11 @@ export async function verifyEmail(code) {
 export async function resendVerificationCode() {
   return apiRequest("/auth/resend-verification", { method: "POST" });
 }
+
+export async function forgotPassword(email) {
+  return apiRequest("/auth/forgot-password", { method: "POST", auth: false, body: { email } });
+}
+
+export async function resetPassword({ email, code, password }) {
+  return apiRequest("/auth/reset-password", { method: "POST", auth: false, body: { email, code, password } });
+}

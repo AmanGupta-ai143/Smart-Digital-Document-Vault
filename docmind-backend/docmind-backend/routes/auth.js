@@ -13,7 +13,7 @@ const {
 } = require("../utils/tokens");
 const logActivity = require("../utils/logActivity");
 const notify = require("../utils/notify");
-const { sendLoginAlertEmail, sendVerificationEmail } = require("../utils/email");
+const { sendLoginAlertEmail, sendVerificationEmail, sendPasswordResetEmail } = require("../utils/email");
 
 const router = express.Router();
 
@@ -430,5 +430,61 @@ router.post("/2fa/disable", requireAuth, [body("password").notEmpty()], validate
     next(err);
   }
 });
+
+/**
+ * POST /api/auth/forgot-password — emails a 6-digit reset code.
+ * Always answers the same way so it can't be used to find out who has an account.
+ */
+router.post("/forgot-password", [body("email").isEmail().normalizeEmail()], validate, async (req, res, next) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    if (user) {
+      const code = await user.setPasswordResetCode();
+      await user.save();
+      await sendPasswordResetEmail(user, code); // never throws
+    }
+    res.json({ message: "If an account exists for that email, we've sent a 6-digit code." });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/auth/reset-password — checks the code, sets the new password,
+ * and signs the account out of every device.
+ */
+router.post(
+  "/reset-password",
+  [
+    body("email").isEmail().normalizeEmail(),
+    body("code").isLength({ min: 6, max: 6 }),
+    body("password").isLength({ min: 8 }).withMessage("Password must be at least 8 characters."),
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { email, code, password } = req.body;
+      const user = await User.findOne({ email }).select("+passwordHash +passwordResetCodeHash +passwordResetExpires +passwordResetAttempts");
+      const ok = user ? await user.verifyPasswordResetCode(code) : false;
+      if (!ok) {
+        if (user && user.passwordResetCodeHash) {
+          user.passwordResetAttempts = (user.passwordResetAttempts || 0) + 1;
+          await user.save();
+        }
+        return res.status(400).json({ message: "That code is invalid or has expired." });
+      }
+      await user.setPassword(password);
+      user.passwordResetCodeHash = undefined;
+      user.passwordResetExpires = undefined;
+      user.passwordResetAttempts = 0;
+      user.devices = [];
+      await user.save();
+      await logActivity(user._id, "password_changed", "Password was reset using an emailed code.");
+      res.json({ message: "Password updated. Please log in with your new password." });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 module.exports = router;
