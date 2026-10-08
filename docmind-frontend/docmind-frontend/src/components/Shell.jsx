@@ -94,16 +94,22 @@ export function MobileNav({ page, setPage, onMore }) {
   );
 }
 
-export function MobileMoreSheet({ onClose, setPage }) {
+export function MobileMoreSheet({ onClose, setPage, onLogout, user }) {
   return (
     <div className="fixed inset-0 z-40 bg-slate-900/40 flex items-end md:hidden" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-slate-900 rounded-t-2xl w-full p-4 pb-8">
+      <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-slate-900 rounded-t-2xl w-full p-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
         <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-4" />
         {NAV_ITEMS.slice(4).map((item) => (
           <button key={item.key} onClick={() => { setPage(item.key); onClose(); }} className="w-full flex items-center gap-3 px-2 py-3 text-sm font-medium text-slate-700 dark:text-slate-300">
             <item.icon size={18} className="text-slate-400 dark:text-slate-500" /> {item.label}
           </button>
         ))}
+        <div className="border-t border-slate-100 dark:border-slate-800 mt-2 pt-2">
+          {user?.email && <p className="px-2 pb-2 text-xs text-slate-400 dark:text-slate-500 truncate">Signed in as {user.email}</p>}
+          <button onClick={() => { onClose(); onLogout(); }} className="w-full flex items-center gap-3 px-2 py-3 text-sm font-medium text-rose-600 dark:text-rose-400">
+            <LogOut size={18} /> Log out
+          </button>
+        </div>
       </div>
     </div>
   );

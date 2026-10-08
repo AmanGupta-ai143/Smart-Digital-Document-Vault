@@ -129,7 +129,7 @@ export default function App() {
 
       {showSearch && <SearchPanel onClose={() => setShowSearch(false)} openDoc={openDoc} setPage={setPage} />}
       {showNotif && <NotificationsPanel onClose={() => { setShowNotif(false); setNotifRefreshKey((k) => k + 1); }} />}
-      {mobileMore && <MobileMoreSheet onClose={() => setMobileMore(false)} setPage={setPage} />}
+      {mobileMore && <MobileMoreSheet onClose={() => setMobileMore(false)} setPage={setPage} onLogout={logout} user={user} />}
     </div>
   );
 }
