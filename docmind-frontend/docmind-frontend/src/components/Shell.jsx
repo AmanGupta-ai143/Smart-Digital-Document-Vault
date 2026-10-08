@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   LayoutDashboard, FileText, Bot, Users, Bell, Activity as ActivityIcon,
-  ShieldCheck, Settings as SettingsIcon, Search, Upload, Menu, LogOut,
+  ShieldCheck, Settings as SettingsIcon, Search, Upload, Menu, LogOut, X,
   ChevronRight, ChevronLeft,
 } from "lucide-react";
 import { Seal } from "./ui.jsx";
@@ -115,6 +115,37 @@ export function MobileMoreSheet({ onClose, setPage, onLogout, user }) {
   );
 }
 
+export function MobileDrawer({ page, setPage, onClose, onLogout, user }) {
+  return (
+    <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu">
+      <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} />
+      <div className="absolute left-0 top-0 bottom-0 w-[82%] max-w-xs bg-white dark:bg-slate-900 shadow-2xl flex flex-col pt-[env(safe-area-inset-top)]">
+        <div className="flex items-center justify-between px-5 h-16 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <Seal size={32}><FileText size={15} /></Seal>
+            <span className="font-serif text-lg text-slate-900 dark:text-slate-100">DocMind AI</span>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close menu" className="w-10 h-10 -mr-2 flex items-center justify-center text-slate-400"><X size={20} /></button>
+        </div>
+        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
+          {NAV_ITEMS.map((item) => {
+            const active = page === item.key;
+            return (
+              <button key={item.key} type="button" onClick={() => { setPage(item.key); onClose(); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium ${active ? "bg-teal-50 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300" : "text-slate-600 dark:text-slate-300"}`}>
+                <item.icon size={18} /> {item.label}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="border-t border-slate-100 dark:border-slate-800 px-5 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          {user?.email && <p className="text-xs text-slate-400 dark:text-slate-500 truncate mb-1">{user.name ? `${user.name} · ` : ""}{user.email}</p>}
+          <button type="button" onClick={() => { onClose(); onLogout(); }} className="w-full flex items-center gap-3 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400"><LogOut size={18} /> Log out</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function TopBar({ user, onSearchOpen, onUpload, onNotifOpen, onMenuOpen, notifRefreshKey }) {
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -124,7 +155,7 @@ export function TopBar({ user, onSearchOpen, onUpload, onNotifOpen, onMenuOpen, 
 
   return (
     <header className="sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 h-16 flex items-center gap-3 px-4 md:px-6">
-      <button onClick={onMenuOpen} aria-label="Open navigation menu" className="md:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 rounded"><Menu size={20} /></button>
+      <button type="button" onClick={onMenuOpen} aria-label="Open navigation menu" className="md:hidden shrink-0 w-11 h-11 -ml-2 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 active:bg-teal-50 active:text-teal-700 dark:active:bg-slate-800 touch-manipulation focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"><Menu size={22} /></button>
       <button onClick={onSearchOpen} aria-label="Search documents, contacts, and reminders" className="flex-1 min-w-0 max-w-md flex items-center gap-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600">
         <Search size={16} className="shrink-0" /> <span className="truncate"><span className="sm:hidden">Search</span><span className="hidden sm:inline">Search documents, contacts, tags…</span></span>
       </button>

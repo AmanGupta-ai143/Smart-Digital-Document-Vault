@@ -17,7 +17,7 @@ import ActivityPage from "./pages/Activity.jsx";
 import SecurityCenter from "./pages/Security.jsx";
 import Settings from "./pages/Settings.jsx";
 
-import { Sidebar, TopBar, MobileNav, MobileMoreSheet } from "./components/Shell.jsx";
+import { Sidebar, TopBar, MobileNav, MobileMoreSheet, MobileDrawer } from "./components/Shell.jsx";
 import EmailVerificationBanner from "./components/EmailVerificationBanner.jsx";
 import UploadModal from "./components/UploadModal.jsx";
 import AddContactModal from "./components/AddContactModal.jsx";
@@ -35,6 +35,7 @@ export default function App() {
   const [page, setPage] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMore, setMobileMore] = useState(false);
+  const [drawer, setDrawer] = useState(false);
 
   const [selectedDocId, setSelectedDocId] = useState(null);
   const [assistantDoc, setAssistantDoc] = useState(null);
@@ -85,7 +86,7 @@ export default function App() {
       />
 
       <div className="flex-1 min-w-0 pb-16 md:pb-0">
-        <TopBar user={user} onSearchOpen={() => setShowSearch(true)} onUpload={() => setShowUpload(true)} onNotifOpen={() => setShowNotif(true)} onMenuOpen={() => setMobileMore(true)} notifRefreshKey={notifRefreshKey} />
+        <TopBar user={user} onSearchOpen={() => setShowSearch(true)} onUpload={() => setShowUpload(true)} onNotifOpen={() => setShowNotif(true)} onMenuOpen={() => setDrawer(true)} notifRefreshKey={notifRefreshKey} />
         <EmailVerificationBanner />
 
         {page === "dashboard" && <Dashboard setPage={setPage} openDoc={openDoc} openUpload={() => setShowUpload(true)} />}
@@ -129,6 +130,7 @@ export default function App() {
 
       {showSearch && <SearchPanel onClose={() => setShowSearch(false)} openDoc={openDoc} setPage={setPage} />}
       {showNotif && <NotificationsPanel onClose={() => { setShowNotif(false); setNotifRefreshKey((k) => k + 1); }} />}
+      {drawer && <MobileDrawer page={page === "documentDetail" ? "documents" : page} setPage={setPage} onClose={() => setDrawer(false)} onLogout={logout} user={user} />}
       {mobileMore && <MobileMoreSheet onClose={() => setMobileMore(false)} setPage={setPage} onLogout={logout} user={user} />}
     </div>
   );
