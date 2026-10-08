@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FileText, Star, AlertTriangle, HardDrive, Bell, Upload, ScanLine, Bot, PlusCircle, Sparkles, Clock } from "lucide-react";
+import { FileText, Star, AlertTriangle, HardDrive, Bell, Upload, ScanLine, Bot, PlusCircle, Sparkles, Clock, ChevronRight, CheckCircle2 } from "lucide-react";
 import { CATEGORY_META, FILE_ICON } from "../lib/constants.js";
 import { fmtDate } from "../lib/format.js";
 import { Spinner, ErrorState } from "../components/ui.jsx";
@@ -37,9 +37,14 @@ export default function Dashboard({ setPage, openDoc, openUpload }) {
   const cards = [
     { label: "Documents", value: documents.length ? `${documents.length}+` : "0", sub: "recently added", icon: FileText, tone: "teal" },
     { label: "Expiring Soon", value: expiringSoon.length, sub: "within 30 days", icon: AlertTriangle, tone: "amber" },
-    { label: "Storage", value: storage ? `${storagePct}%` : "—", sub: storage ? `${storageGb(storage.usedBytes)} of ${storageGb(storage.limitBytes)} GB` : "loading…", icon: HardDrive, tone: "slate", progress: storage ? storagePct : null },
-    { label: "Reminders", value: upcoming.length, sub: "pending", icon: Bell, tone: "rose" },
   ];
+
+  const nextReminders = [...upcoming].sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 2);
+  const dueLabel = (d) => {
+    const days = Math.ceil((new Date(d) - Date.now()) / DAY_MS);
+    return days <= 0 ? "Today" : days === 1 ? "Tomorrow" : days < 8 ? `In ${days} days` : fmtDate(d);
+  };
+  const barTone = storagePct > 85 ? "bg-rose-500" : storagePct > 70 ? "bg-amber-500" : "bg-teal-600";
 
   const actionItems = [
     ...overdue.map((r) => ({ id: `rem-${r._id}`, icon: Clock, tone: "rose", text: `Reminder overdue: ${r.title}`, action: () => setPage("reminders") })),
@@ -61,23 +66,65 @@ export default function Dashboard({ setPage, openDoc, openUpload }) {
         <p className="text-slate-500 text-sm mt-1 dark:text-slate-400">Here's what's happening in your digital vault.</p>
       </div>
 
+      {/* Storage bar */}
+      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3.5 dark:bg-slate-900 dark:border-slate-700">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 flex items-center justify-center shrink-0"><HardDrive size={17} /></div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Storage</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{storage ? `${storageGb(storage.usedBytes)} of ${storageGb(storage.limitBytes)} GB used` : "loading…"}</p>
+            </div>
+            <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
+              <div className={`h-full rounded-full transition-all ${barTone}`} style={{ width: `${Math.max(storage ? storagePct : 0, storage ? 2 : 0)}%` }} />
+            </div>
+          </div>
+          <p className="font-serif text-lg text-slate-900 dark:text-slate-100 w-12 text-right shrink-0">{storage ? `${storagePct}%` : "—"}</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c) => (
           <div key={c.label} className="bg-white rounded-xl border border-slate-200 p-4 dark:bg-slate-900 dark:border-slate-700">
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${
-              c.tone === "teal" ? "bg-teal-50 text-teal-700" : c.tone === "amber" ? "bg-amber-50 text-amber-700" : c.tone === "rose" ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-600"
-            }`}>
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${c.tone === "teal" ? "bg-teal-50 text-teal-700" : "bg-amber-50 text-amber-700"}`}>
               <c.icon size={17} />
             </div>
             <p className="text-2xl font-serif text-slate-900 dark:text-slate-100">{c.value}</p>
             <p className="text-xs text-slate-500 mt-0.5 dark:text-slate-400">{c.label} · {c.sub}</p>
-            {c.progress !== null && c.progress !== undefined && (
-              <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
-                <div className={`h-full rounded-full ${c.progress > 85 ? "bg-rose-500" : "bg-teal-600"}`} style={{ width: `${c.progress}%` }} />
-              </div>
-            )}
           </div>
         ))}
+
+        {/* Highlighted reminders card — shows what is due without needing a tap */}
+        <button
+          onClick={() => setPage("reminders")}
+          className="col-span-2 text-left rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 via-white to-amber-50 p-4 shadow-sm hover:shadow-md transition-shadow dark:from-rose-950/40 dark:via-slate-900 dark:to-slate-900 dark:border-rose-900/60"
+        >
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0"><Bell size={17} /></div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Reminders</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{upcoming.length} pending{overdue.length > 0 ? ` · ${overdue.length} overdue` : ""}</p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-rose-400 shrink-0" />
+          </div>
+          {nextReminders.length === 0 && overdue.length === 0 ? (
+            <p className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"><CheckCircle2 size={16} className="text-teal-600" /> You're all caught up.</p>
+          ) : (
+            <div className="space-y-2">
+              {overdue.length > 0 && (
+                <p className="text-xs font-medium text-rose-700 bg-rose-100 dark:bg-rose-900/40 dark:text-rose-300 rounded-md px-2.5 py-1.5">{overdue.length} overdue — tap to review</p>
+              )}
+              {nextReminders.map((r) => (
+                <div key={r._id} className="flex items-center justify-between gap-3 bg-white/80 dark:bg-slate-800/70 border border-rose-100 dark:border-rose-900/40 rounded-lg px-3 py-2">
+                  <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{r.title}</span>
+                  <span className="text-xs font-medium text-rose-700 dark:text-rose-300 shrink-0">{dueLabel(r.date)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </button>
       </div>
 
       {actionItems.length > 0 && (
