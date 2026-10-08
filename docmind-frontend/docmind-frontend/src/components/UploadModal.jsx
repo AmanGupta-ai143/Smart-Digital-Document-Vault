@@ -1,11 +1,13 @@
 import React, { useState, useRef } from "react";
-import { Upload, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Upload, CheckCircle2, AlertTriangle, ScanLine, Camera } from "lucide-react";
 import { Modal } from "../components/ui.jsx";
 import * as docsApi from "../api/documents.js";
 
 const STAGES = ["Uploading", "Reading document", "Extracting text", "AI analyzing", "Organizing complete"];
 
-export default function UploadModal({ onClose, onComplete }) {
+export default function UploadModal({ onClose, onComplete, mode = "upload" }) {
+  const scan = mode === "scan";
+  const cameraRef = useRef(null);
   const [file, setFile] = useState(null);
   const [autoAnalyze, setAutoAnalyze] = useState(true);
   const [stageIndex, setStageIndex] = useState(0); // 0 = idle
@@ -40,7 +42,7 @@ export default function UploadModal({ onClose, onComplete }) {
   };
 
   return (
-    <Modal title="Upload Document" onClose={onClose}>
+    <Modal title={scan ? "Scan Document" : "Upload Document"} onClose={onClose}>
       {stageIndex === 0 ? (
         <div>
           {error && (
@@ -48,11 +50,21 @@ export default function UploadModal({ onClose, onComplete }) {
               <AlertTriangle size={14} /> {error}
             </div>
           )}
+          {scan && (
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-teal-50 dark:bg-teal-900/30 text-teal-700 flex items-center justify-center mb-4"><ScanLine size={28} /></div>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Scan with your camera</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">Lay the page flat in good light and fill the frame. DocMind reads the text for you.</p>
+              <button type="button" onClick={() => cameraRef.current?.click()} className="w-full bg-teal-700 hover:bg-teal-800 text-white py-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2"><Camera size={17} /> Take a photo</button>
+              <button type="button" onClick={() => inputRef.current?.click()} className="w-full mt-2 text-sm text-teal-700 font-medium py-2.5">Choose from gallery or files</button>
+              <input ref={cameraRef} type="file" hidden accept="image/*" capture="environment" onChange={(e) => handleFiles(e.target.files)} />
+            </div>
+          )}
           <div
             onClick={() => inputRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
-            className="border-2 border-dashed border-slate-200 hover:border-teal-400 rounded-xl p-10 text-center cursor-pointer transition-colors dark:border-slate-700"
+            className={`${scan ? "hidden " : ""}border-2 border-dashed border-slate-200 hover:border-teal-400 rounded-xl p-10 text-center cursor-pointer transition-colors dark:border-slate-700`}
           >
             <Upload className="mx-auto text-teal-700 mb-3" size={26} />
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Drag and drop your file here</p>

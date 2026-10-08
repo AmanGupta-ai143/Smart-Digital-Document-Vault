@@ -88,7 +88,10 @@ router.post(
  */
 router.patch("/:id", async (req, res, next) => {
   try {
-    const reminder = await Reminder.findOneAndUpdate({ _id: req.params.id, userId: req.user._id }, req.body, { new: true });
+    const allowed = ["title", "date", "notes", "repeat", "priority", "status"];
+    const patch = Object.fromEntries(Object.entries(req.body).filter(([key]) => allowed.includes(key)));
+    if (patch.date) { patch.notified7d = false; patch.notified1d = false; } // new date -> alert again
+    const reminder = await Reminder.findOneAndUpdate({ _id: req.params.id, userId: req.user._id }, patch, { new: true });
     if (!reminder) return res.status(404).json({ message: "Reminder not found." });
 
     if (req.body.status === "completed") {

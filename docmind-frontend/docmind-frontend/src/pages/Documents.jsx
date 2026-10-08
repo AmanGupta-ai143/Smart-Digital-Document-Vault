@@ -204,22 +204,23 @@ export default function MyDocuments({ openDoc, openUpload, setPage, setAssistant
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-5">
-        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 flex-1 min-w-[200px] dark:bg-slate-900 dark:border-slate-700">
+        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl md:rounded-lg px-3 h-12 md:h-auto md:py-2 flex-1 min-w-[200px] dark:bg-slate-900 dark:border-slate-700">
           <Search size={15} className="text-slate-400 dark:text-slate-500" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search this list…" className="text-sm outline-none flex-1 dark:bg-transparent dark:text-slate-100 dark:placeholder-slate-500" />
         </div>
-        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 border border-slate-200 bg-white rounded-lg px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-          <Filter size={14} /> Filter
+        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 border border-slate-200 bg-white rounded-xl md:rounded-lg px-4 h-12 md:h-auto md:px-3 md:py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 touch-manipulation">
+          <Filter size={16} /> Filter
         </button>
-        <div className="flex border border-slate-200 rounded-lg overflow-hidden dark:border-slate-700">
+        <div className="flex border border-slate-200 rounded-xl overflow-hidden dark:border-slate-700">
           {viewButtons.map(({ key, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setView(key)}
               title={key[0].toUpperCase() + key.slice(1) + " view"}
-              className={`p-2 ${view === key ? "bg-slate-900 dark:bg-teal-700 text-white" : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400"}`}
+              aria-label={key[0].toUpperCase() + key.slice(1) + " view"}
+              className={`w-14 h-12 md:w-10 md:h-10 flex items-center justify-center touch-manipulation ${view === key ? "bg-slate-900 dark:bg-teal-700 text-white" : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400"}`}
             >
-              <Icon size={15} />
+              <Icon size={22} className="md:w-[15px] md:h-[15px]" />
             </button>
           ))}
         </div>

@@ -99,4 +99,23 @@ function sendPasswordResetEmail(user, code) {
   });
 }
 
-module.exports = { sendEmail, sendLoginAlertEmail, sendVerificationEmail, sendPasswordResetEmail };
+function sendReminderEmail(user, reminder, daysLeft) {
+  const when = daysLeft <= 0 ? "is due today" : daysLeft === 1 ? "is due tomorrow" : `is due in ${daysLeft} days`;
+  const dateText = new Date(reminder.date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+  const link = process.env.CLIENT_URL || "";
+  return sendEmail({
+    to: user.email,
+    subject: `Reminder: ${reminder.title} ${when}`,
+    html: `
+      <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;color:#1e293b">
+        <h2 style="color:#be123c;margin-bottom:4px">${reminder.title}</h2>
+        <p style="margin-top:0">This reminder <strong>${when}</strong> (${dateText}).</p>
+        ${reminder.notes ? `<p style="background:#f8fafc;border-radius:8px;padding:12px;color:#475569">${reminder.notes}</p>` : ""}
+        ${link ? `<p><a href="${link}" style="display:inline-block;background:#0f766e;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Open DocMind AI</a></p>` : ""}
+        <p style="color:#94a3b8;font-size:12px;margin-top:28px;border-top:1px solid #e2e8f0;padding-top:12px">You get these because reminders are on in your DocMind AI settings.</p>
+      </div>
+    `,
+  });
+}
+
+module.exports = { sendEmail, sendLoginAlertEmail, sendVerificationEmail, sendPasswordResetEmail, sendReminderEmail };

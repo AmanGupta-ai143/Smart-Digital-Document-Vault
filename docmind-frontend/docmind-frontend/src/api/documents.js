@@ -21,6 +21,12 @@ export async function getDocument(id) {
   return data.document;
 }
 
+export async function getFileAccess(id) {
+  // The server checks you own the document, then returns a link to open the file.
+  const data = await apiRequest(`/documents/${id}/access`);
+  return data.url;
+}
+
 export async function updateDocument(id, patch) {
   const data = await apiRequest(`/documents/${id}`, { method: "PATCH", body: patch });
   return data.document;

@@ -25,8 +25,17 @@ function isTemporaryError(err) {
   return /\b(503|429)\b|UNAVAILABLE|RESOURCE_EXHAUSTED|overloaded|high demand/i.test(text);
 }
 
+// A request that hangs is worse than one that fails fast: after this long we give up on
+// the attempt and move on to the retry / lighter model instead of making the user wait.
+const ATTEMPT_TIMEOUT_MS = 20000;
+const withTimeout = (promise, ms) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(Object.assign(new Error("503 AI request timed out"), { status: 503 })), ms)),
+  ]);
+
 async function callModel(model, prompt, maxOutputTokens) {
-  const response = await ai.models.generateContent({
+  const response = await withTimeout(ai.models.generateContent({
     model,
     contents: prompt,
     config: {
@@ -34,7 +43,7 @@ async function callModel(model, prompt, maxOutputTokens) {
       maxOutputTokens: maxOutputTokens * 4, // leave room for model "thinking" tokens
       thinkingConfig: { thinkingBudget: 0 }, // not needed for this task
     },
-  });
+  }), ATTEMPT_TIMEOUT_MS);
 
   const text = response.text;
   if (!text) throw new Error("AI returned an empty response.");
@@ -104,10 +113,41 @@ Respond with ONLY valid JSON matching this shape:
  * AI Assistant). Context is limited to the requesting user's own
  * documents — callers must pre-filter by userId before calling this.
  */
-async function answerQuestion(question, documents) {
-  const context = documents
-    .map((d, i) => `[Doc ${i + 1}: ${d.fileName}]\n${(d.extractedText || "").slice(0, 4000)}`)
+const STOP_WORDS = new Set(["the","and","for","what","when","where","which","who","how","does","did","are","was","with","this","that","from","about","have","has","can","you","your","tell","show","all","any","document","documents","please","give","find","list"]);
+
+/**
+ * Sending every document in full makes answers slow. Instead, rank documents by how well they
+ * match the question and send only the best few, each trimmed to the part around the match.
+ */
+function buildContext(question, documents) {
+  const keys = [...new Set((question.toLowerCase().match(/[a-z0-9]{3,}/g) || []).filter((w) => !STOP_WORDS.has(w)))];
+  const single = documents.length === 1;
+  const perDoc = single ? 12000 : 3000;
+
+  const ranked = documents
+    .map((d) => {
+      const text = d.extractedText || "";
+      const lower = `${d.fileName} ${text}`.toLowerCase();
+      return { d, text, score: keys.reduce((n, k) => n + (lower.includes(k) ? 1 : 0), 0) };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, single ? 1 : 5);
+
+  return ranked
+    .map(({ d, text }, i) => {
+      let start = 0;
+      if (text.length > perDoc) {
+        const lower = text.toLowerCase();
+        const hit = keys.map((k) => lower.indexOf(k)).filter((x) => x >= 0).sort((x, y) => x - y)[0];
+        start = hit !== undefined ? Math.max(0, hit - 500) : 0;
+      }
+      return `[Doc ${i + 1}: ${d.fileName}]\n${text.slice(start, start + perDoc)}`;
+    })
     .join("\n\n");
+}
+
+async function answerQuestion(question, documents) {
+  const context = buildContext(question, documents);
 
   const prompt = `You are DocMind AI, an assistant answering questions about a user's own personal documents.
 Only use the provided document context. If the answer isn't in the documents, say so plainly.

@@ -17,7 +17,7 @@ import ActivityPage from "./pages/Activity.jsx";
 import SecurityCenter from "./pages/Security.jsx";
 import Settings from "./pages/Settings.jsx";
 
-import { Sidebar, TopBar, MobileNav, MobileMoreSheet, MobileDrawer } from "./components/Shell.jsx";
+import { Sidebar, TopBar, MobileNav, MobileDrawer } from "./components/Shell.jsx";
 import EmailVerificationBanner from "./components/EmailVerificationBanner.jsx";
 import UploadModal from "./components/UploadModal.jsx";
 import AddContactModal from "./components/AddContactModal.jsx";
@@ -34,12 +34,12 @@ export default function App() {
   const [authView, setAuthView] = useState("landing"); // landing | login | signup
   const [page, setPage] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileMore, setMobileMore] = useState(false);
   const [drawer, setDrawer] = useState(false);
 
   const [selectedDocId, setSelectedDocId] = useState(null);
   const [assistantDoc, setAssistantDoc] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [uploadMode, setUploadMode] = useState("upload");
   const [showAddContact, setShowAddContact] = useState(false);
   const [showAddReminder, setShowAddReminder] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -86,10 +86,10 @@ export default function App() {
       />
 
       <div className="flex-1 min-w-0 pb-16 md:pb-0">
-        <TopBar user={user} onSearchOpen={() => setShowSearch(true)} onUpload={() => setShowUpload(true)} onNotifOpen={() => setShowNotif(true)} onMenuOpen={() => setDrawer(true)} notifRefreshKey={notifRefreshKey} />
+        <TopBar user={user} setPage={setPage} onLogout={logout} onSearchOpen={() => setShowSearch(true)} onUpload={() => setShowUpload(true)} onNotifOpen={() => setShowNotif(true)} onMenuOpen={() => setDrawer(true)} notifRefreshKey={notifRefreshKey} />
         <EmailVerificationBanner />
 
-        {page === "dashboard" && <Dashboard setPage={setPage} openDoc={openDoc} openUpload={() => setShowUpload(true)} />}
+        {page === "dashboard" && <Dashboard setPage={setPage} openDoc={openDoc} openUpload={(mode) => { setUploadMode(mode === "scan" ? "scan" : "upload"); setShowUpload(true); }} />}
         {page === "documents" && <MyDocuments openDoc={openDoc} openUpload={() => setShowUpload(true)} setPage={setPage} setAssistantDoc={setAssistantDoc} />}
         {page === "documentDetail" && selectedDocId && <DocumentDetail docId={selectedDocId} onBack={() => setPage("documents")} setPage={setPage} setAssistantDoc={setAssistantDoc} />}
         {page === "assistant" && <AIAssistant initialDocId={assistantDoc} openDoc={openDoc} />}
@@ -100,7 +100,7 @@ export default function App() {
         {page === "settings" && <Settings setPage={setPage} />}
       </div>
 
-      <MobileNav page={page === "documentDetail" ? "documents" : page} setPage={setPage} onMore={() => setMobileMore(true)} />
+      <MobileNav page={page === "documentDetail" ? "documents" : page} setPage={setPage} />
 
       {status === "authenticated" && user && !user.preferences?.hasSeenOnboarding && (
         <Onboarding onFinish={() => {}} onUpload={() => setShowUpload(true)} />
@@ -108,8 +108,9 @@ export default function App() {
 
       {showUpload && (
         <UploadModal
-          onClose={() => setShowUpload(false)}
-          onComplete={() => { setShowUpload(false); showToast("Document uploaded and organized."); setPage("documents"); }}
+          mode={uploadMode}
+          onClose={() => { setShowUpload(false); setUploadMode("upload"); }}
+          onComplete={() => { setShowUpload(false); setUploadMode("upload"); showToast("Document uploaded and organized."); setPage("documents"); }}
         />
       )}
 
@@ -131,7 +132,6 @@ export default function App() {
       {showSearch && <SearchPanel onClose={() => setShowSearch(false)} openDoc={openDoc} setPage={setPage} />}
       {showNotif && <NotificationsPanel onClose={() => { setShowNotif(false); setNotifRefreshKey((k) => k + 1); }} />}
       {drawer && <MobileDrawer page={page === "documentDetail" ? "documents" : page} setPage={setPage} onClose={() => setDrawer(false)} onLogout={logout} user={user} />}
-      {mobileMore && <MobileMoreSheet onClose={() => setMobileMore(false)} setPage={setPage} onLogout={logout} user={user} />}
     </div>
   );
 }

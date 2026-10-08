@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, FileText, Bot, Users, Bell, Activity as ActivityIcon,
   ShieldCheck, Settings as SettingsIcon, Search, Upload, Menu, LogOut, X,
@@ -76,7 +76,7 @@ export function Sidebar({ page, setPage, collapsed, setCollapsed, onLogout, user
   );
 }
 
-export function MobileNav({ page, setPage, onMore }) {
+export function MobileNav({ page, setPage }) {
   const items = NAV_ITEMS.slice(0, 4);
   const SHORT = { dashboard: "Home", documents: "Docs", assistant: "AI", contacts: "Contacts" };
   return (
@@ -87,9 +87,6 @@ export function MobileNav({ page, setPage, onMore }) {
           {SHORT[item.key] || item.label}
         </button>
       ))}
-      <button onClick={onMore} className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] text-slate-400 dark:text-slate-500">
-        <Menu size={19} /> More
-      </button>
     </nav>
   );
 }
@@ -146,7 +143,72 @@ export function MobileDrawer({ page, setPage, onClose, onLogout, user }) {
   );
 }
 
-export function TopBar({ user, onSearchOpen, onUpload, onNotifOpen, onMenuOpen, notifRefreshKey }) {
+function AvatarMenu({ user, setPage, onLogout }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const initials = (user?.name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const go = (key) => { setOpen(false); setPage(key); };
+  const items = [
+    { key: "settings", label: "Settings", icon: SettingsIcon },
+    { key: "security", label: "Security Center", icon: ShieldCheck },
+    { key: "activity", label: "Activity", icon: ActivityIcon },
+  ];
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Account menu"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500 to-teal-800 text-white text-xs font-semibold tracking-wide flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-md shadow-teal-700/30 touch-manipulation"
+      >
+        {initials}
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden z-50">
+          <div className="flex items-center gap-3 px-4 py-4 bg-gradient-to-br from-teal-50 to-white dark:from-teal-950/40 dark:to-slate-900 border-b border-slate-100 dark:border-slate-800">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-teal-500 to-teal-800 text-white text-sm font-semibold flex items-center justify-center shrink-0">{initials}</div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user?.name || "Your account"}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+            </div>
+          </div>
+          <div className="p-1.5">
+            {items.map((it) => (
+              <button key={it.key} type="button" role="menuitem" onClick={() => go(it.key)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
+                <it.icon size={16} className="text-slate-400" /> {it.label}
+              </button>
+            ))}
+          </div>
+          <div className="p-1.5 border-t border-slate-100 dark:border-slate-800">
+            <button type="button" role="menuitem" onClick={() => { setOpen(false); onLogout(); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20">
+              <LogOut size={16} /> Log out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function TopBar({ user, setPage, onLogout, onSearchOpen, onUpload, onNotifOpen, onMenuOpen, notifRefreshKey }) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -167,9 +229,7 @@ export function TopBar({ user, onSearchOpen, onUpload, onNotifOpen, onMenuOpen, 
           <Bell size={19} />
           {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full ring-2 ring-white dark:ring-slate-900" />}
         </button>
-        <div className="w-8 h-8 rounded-full bg-slate-800 dark:bg-slate-700 text-white text-xs font-serif flex items-center justify-center">
-          {(user?.name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
-        </div>
+        <AvatarMenu user={user} setPage={setPage} onLogout={onLogout} />
       </div>
     </header>
   );

@@ -4,7 +4,7 @@ const upload = require("../middleware/upload");
 const Document = require("../models/Document");
 const Reminder = require("../models/Reminder");
 const User = require("../models/User");
-const { uploadBuffer, deleteFile } = require("../config/cloudStorage");
+const { uploadBuffer, deleteFile, signedUrl } = require("../config/cloudStorage");
 const { extractText } = require("../utils/textExtraction");
 const { analyzeDocument, answerQuestion } = require("../utils/aiService");
 const logActivity = require("../utils/logActivity");
@@ -40,6 +40,8 @@ router.post("/upload", upload.single("file"), async (req, res, next) => {
       fileSizeBytes: req.file.size,
       cloudFileUrl: result.secure_url,
       cloudPublicId: result.public_id,
+      cloudResourceType: result.resource_type,
+      cloudAccess: "authenticated",
       category: req.body.category || "Other",
       tags: req.body.tags ? req.body.tags.split(",").map((t) => t.trim()) : [],
       isImportant: req.body.isImportant === "true",
@@ -129,6 +131,20 @@ router.get("/", async (req, res, next) => {
 /**
  * GET /api/documents/:id
  */
+/**
+ * GET /api/documents/:id/access — hands the owner a link to open their own file.
+ * The ownership check happens here, so the storage address is never listed publicly.
+ */
+router.get("/:id/access", async (req, res, next) => {
+  try {
+    const doc = await Document.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!doc) return res.status(404).json({ message: "Document not found." });
+    res.json({ url: signedUrl(doc) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/:id", async (req, res, next) => {
   try {
     const doc = await Document.findOne({ _id: req.params.id, userId: req.user._id });
@@ -211,7 +227,7 @@ router.delete("/trash", async (req, res, next) => {
     const trashed = await Document.find({ userId: req.user._id, isDeleted: true });
     let freedBytes = 0;
     for (const doc of trashed) {
-      await deleteFile(doc.cloudPublicId).catch(() => {});
+      await deleteFile(doc.cloudPublicId, doc).catch(() => {});
       freedBytes += doc.fileSizeBytes || 0;
     }
     await Document.deleteMany({ userId: req.user._id, isDeleted: true });
@@ -273,7 +289,7 @@ router.delete("/:id/permanent", async (req, res, next) => {
     const doc = await Document.findOneAndDelete({ _id: req.params.id, userId: req.user._id, isDeleted: true });
     if (!doc) return res.status(404).json({ message: "Document not found in recycle bin." });
 
-    await deleteFile(doc.cloudPublicId);
+    await deleteFile(doc.cloudPublicId, doc);
     req.user.storageUsedBytes = Math.max(0, req.user.storageUsedBytes - doc.fileSizeBytes);
     await req.user.save();
 

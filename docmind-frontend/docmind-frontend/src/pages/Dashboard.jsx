@@ -148,8 +148,8 @@ export default function Dashboard({ setPage, openDoc, openUpload }) {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Upload Document", icon: Upload, action: openUpload },
-          { label: "Scan Document", icon: ScanLine, action: openUpload },
+          { label: "Upload Document", icon: Upload, action: () => openUpload("upload") },
+          { label: "Scan Document", icon: ScanLine, action: () => openUpload("scan") },
           { label: "Ask DocMind AI", icon: Bot, action: () => setPage("assistant") },
           { label: "Add Contact", icon: PlusCircle, action: () => setPage("contacts") },
         ].map((a) => (

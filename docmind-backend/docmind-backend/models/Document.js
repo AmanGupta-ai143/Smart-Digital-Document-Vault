@@ -21,6 +21,9 @@ const documentSchema = new mongoose.Schema(
     // Cloud storage
     cloudFileUrl: { type: String, required: true },
     cloudPublicId: { type: String, required: true },
+    cloudResourceType: { type: String, default: null },
+    // "authenticated" = private, link only via a signed URL. Older uploads are "public".
+    cloudAccess: { type: String, enum: ["public", "authenticated"], default: "public" },
 
     // Organization
     category: { type: String, enum: CATEGORIES, default: "Other" },
@@ -65,5 +68,14 @@ documentSchema.index({ userId: 1, isImportant: 1 });
 documentSchema.index({ fileName: "text", extractedText: "text", tags: "text", aiTags: "text" });
 
 documentSchema.statics.CATEGORIES = CATEGORIES;
+
+// Private files must never expose their raw storage address in API responses.
+documentSchema.set("toJSON", {
+  transform: (doc, ret) => {
+    if (ret.cloudAccess === "authenticated") delete ret.cloudFileUrl;
+    delete ret.cloudPublicId;
+    return ret;
+  },
+});
 
 module.exports = mongoose.model("Document", documentSchema);

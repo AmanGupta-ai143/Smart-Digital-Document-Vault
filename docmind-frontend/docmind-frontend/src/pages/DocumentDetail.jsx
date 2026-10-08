@@ -24,6 +24,16 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
 
   useEffect(load, [docId]);
 
+  // Files are private: ask the server for a link to open this document.
+  const [fileUrl, setFileUrl] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    setFileUrl(null);
+    docsApi.getFileAccess(docId).then((u) => { if (alive) setFileUrl(u); }).catch(() => {});
+    return () => { alive = false; };
+  }, [docId]);
+  const fileHref = fileUrl || doc?.cloudFileUrl;
+
   const update = async (patch) => {
     setDoc((d) => ({ ...d, ...patch }));
     try {
@@ -70,18 +80,18 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
         {/* Left column: file preview */}
         <div className="min-w-0 md:col-span-2">
           {doc.fileType === "pdf" ? (
-            <PdfViewer url={doc.cloudFileUrl} title={doc.fileName} />
+            fileHref ? <PdfViewer url={fileHref} title={doc.fileName} /> : <div className="bg-white border border-slate-200 rounded-xl h-72 flex items-center justify-center dark:bg-slate-900 dark:border-slate-700"><Spinner label="Preparing secure preview…" /></div>
           ) : (
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col items-center justify-center text-center h-72 md:h-full dark:bg-slate-900 dark:border-slate-700">
               {doc.fileType === "jpg" || doc.fileType === "png" ? (
-                <img src={doc.cloudFileUrl} alt={doc.fileName} className="w-full h-full object-contain bg-slate-50 dark:bg-slate-800" />
+                <img src={fileHref} alt={doc.fileName} className="w-full h-full object-contain bg-slate-50 dark:bg-slate-800" />
               ) : (
                 <div className="p-6 flex flex-col items-center">
                   <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${meta.bg}`}><FIcon size={28} className={meta.color} /></div>
                   <p className="text-sm font-medium text-slate-800 px-2 break-all dark:text-slate-200">{doc.fileName}</p>
                   <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{doc.fileType?.toUpperCase()} · {fmtBytes(doc.fileSizeBytes)}</p>
                   <p className="text-xs text-slate-400 mt-2 dark:text-slate-500">Preview isn't available for this file type.</p>
-                  <a href={doc.cloudFileUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-700 font-medium mt-4">Open original file</a>
+                  <a href={fileHref} target="_blank" rel="noreferrer" className="text-xs text-teal-700 font-medium mt-4">Open original file</a>
                 </div>
               )}
             </div>
@@ -185,7 +195,7 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
             <button onClick={() => update({ isImportant: !doc.isImportant })} className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60">
               <BadgeCheck size={14} /> {doc.isImportant ? "Marked Important" : "Mark Important"}
             </button>
-            <a href={doc.cloudFileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60"><Download size={14} /> Download</a>
+            <a href={fileHref} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60"><Download size={14} /> Download</a>
             <button onClick={() => update({ isArchived: !doc.isArchived })} className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60">
               <Archive size={14} /> {doc.isArchived ? "Unarchive" : "Archive"}
             </button>

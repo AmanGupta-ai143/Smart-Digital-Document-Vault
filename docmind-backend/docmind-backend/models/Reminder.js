@@ -14,6 +14,10 @@ const reminderSchema = new mongoose.Schema(
     priority: { type: String, enum: ["low", "medium", "high"], default: "medium" },
     documentId: { type: mongoose.Schema.Types.ObjectId, ref: "Document", default: null },
 
+    // Email alerts already sent, so each one goes out only once.
+    notified7d: { type: Boolean, default: false },
+    notified1d: { type: Boolean, default: false },
+
     status: {
       type: String,
       enum: ["upcoming", "completed", "dismissed"],
