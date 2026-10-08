@@ -55,9 +55,9 @@ export default function Dashboard({ setPage, openDoc, openUpload }) {
   const firstName = (user?.name || "there").split(" ")[0];
 
   return (
-    <div className="p-5 md:p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-4 sm:p-5 md:p-8 max-w-6xl mx-auto space-y-6 md:space-y-8">
       <div>
-        <h1 className="font-serif text-2xl md:text-3xl text-slate-900 dark:text-slate-100">Good morning, {firstName} 👋</h1>
+        <h1 className="font-serif text-2xl md:text-3xl text-slate-900 dark:text-slate-100">{(() => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; })()}, {firstName} 👋</h1>
         <p className="text-slate-500 text-sm mt-1 dark:text-slate-400">Here's what's happening in your digital vault.</p>
       </div>
 
@@ -91,7 +91,7 @@ export default function Dashboard({ setPage, openDoc, openUpload }) {
             {actionItems.slice(0, 4).map((item) => (
               <button key={item.id} onClick={item.action} className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 text-left dark:hover:bg-slate-800/60">
                 <item.icon size={16} className={item.tone === "rose" ? "text-rose-600" : "text-amber-600"} />
-                <span className="text-sm text-slate-700 dark:text-slate-300 flex-1">{item.text}</span>
+                <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 min-w-0 break-words">{item.text}</span>
                 <span className="text-xs text-teal-700 font-medium">View</span>
               </button>
             ))}
@@ -99,7 +99,7 @@ export default function Dashboard({ setPage, openDoc, openUpload }) {
         </div>
       )}
 
-      <div className="grid sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "Upload Document", icon: Upload, action: openUpload },
           { label: "Scan Document", icon: ScanLine, action: openUpload },
@@ -113,8 +113,8 @@ export default function Dashboard({ setPage, openDoc, openUpload }) {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 dark:bg-slate-900 dark:border-slate-700">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="min-w-0 lg:col-span-2 bg-white rounded-xl border border-slate-200 dark:bg-slate-900 dark:border-slate-700">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
             <h2 className="font-medium text-slate-900 dark:text-slate-100">Recent Documents</h2>
             <button onClick={() => setPage("documents")} className="text-xs text-teal-700 font-medium">View all</button>
@@ -147,7 +147,7 @@ export default function Dashboard({ setPage, openDoc, openUpload }) {
           )}
         </div>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <div className="bg-white rounded-xl border border-slate-200 dark:bg-slate-900 dark:border-slate-700">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
               <h2 className="font-medium text-slate-900 dark:text-slate-100">Upcoming Reminders</h2>

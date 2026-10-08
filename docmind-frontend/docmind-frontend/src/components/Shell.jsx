@@ -78,12 +78,13 @@ export function Sidebar({ page, setPage, collapsed, setCollapsed, onLogout, user
 
 export function MobileNav({ page, setPage, onMore }) {
   const items = NAV_ITEMS.slice(0, 4);
+  const SHORT = { dashboard: "Home", documents: "Docs", assistant: "AI", contacts: "Contacts" };
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-stretch z-30">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-stretch z-30 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(15,23,42,0.06)]">
       {items.map((item) => (
         <button key={item.key} onClick={() => setPage(item.key)} className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] ${page === item.key ? "text-teal-700 dark:text-teal-400" : "text-slate-400 dark:text-slate-500"}`}>
           <item.icon size={19} />
-          {item.label.split(" ")[0]}
+          {SHORT[item.key] || item.label}
         </button>
       ))}
       <button onClick={onMore} className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] text-slate-400 dark:text-slate-500">
@@ -118,8 +119,8 @@ export function TopBar({ user, onSearchOpen, onUpload, onNotifOpen, onMenuOpen, 
   return (
     <header className="sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 h-16 flex items-center gap-3 px-4 md:px-6">
       <button onClick={onMenuOpen} aria-label="Open navigation menu" className="md:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 rounded"><Menu size={20} /></button>
-      <button onClick={onSearchOpen} aria-label="Search documents, contacts, and reminders" className="flex-1 max-w-md flex items-center gap-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600">
-        <Search size={16} /> Search documents, contacts, tags…
+      <button onClick={onSearchOpen} aria-label="Search documents, contacts, and reminders" className="flex-1 min-w-0 max-w-md flex items-center gap-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600">
+        <Search size={16} className="shrink-0" /> <span className="truncate"><span className="sm:hidden">Search</span><span className="hidden sm:inline">Search documents, contacts, tags…</span></span>
       </button>
       <div className="ml-auto flex items-center gap-2">
         <button onClick={onUpload} className="hidden sm:flex items-center gap-1.5 bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium px-3.5 py-2 rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-800">
