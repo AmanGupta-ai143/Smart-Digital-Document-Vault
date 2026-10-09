@@ -7,6 +7,8 @@ const STAGES = ["Uploading", "Reading document", "Extracting text", "AI analyzin
 
 export default function UploadModal({ onClose, onComplete, mode = "upload" }) {
   const scan = mode === "scan";
+  // Only phones and tablets have a camera that opens straight from the page.
+  const isPhone = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const cameraRef = useRef(null);
   const [file, setFile] = useState(null);
   const [autoAnalyze, setAutoAnalyze] = useState(true);
@@ -53,10 +55,23 @@ export default function UploadModal({ onClose, onComplete, mode = "upload" }) {
           {scan && (
             <div className="text-center">
               <div className="w-16 h-16 mx-auto rounded-2xl bg-teal-50 dark:bg-teal-900/30 text-teal-700 flex items-center justify-center mb-4"><ScanLine size={28} /></div>
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Scan with your camera</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">Lay the page flat in good light and fill the frame. DocMind reads the text for you.</p>
-              <button type="button" onClick={() => cameraRef.current?.click()} className="w-full bg-teal-700 hover:bg-teal-800 text-white py-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2"><Camera size={17} /> Take a photo</button>
-              <button type="button" onClick={() => inputRef.current?.click()} className="w-full mt-2 text-sm text-teal-700 font-medium py-2.5">Choose from gallery or files</button>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{isPhone ? "Scan with your camera" : "Scan a document"}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">
+                {isPhone
+                  ? "Lay the page flat in good light and fill the frame. DocMind reads the text for you."
+                  : "Choose a scanned page or a photo of a document. DocMind reads the text for you."}
+              </p>
+              {isPhone ? (
+                <>
+                  <button type="button" onClick={() => cameraRef.current?.click()} className="w-full bg-teal-700 hover:bg-teal-800 text-white py-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2"><Camera size={17} /> Take a photo</button>
+                  <button type="button" onClick={() => inputRef.current?.click()} className="w-full mt-2 text-sm text-teal-700 font-medium py-2.5">Choose from gallery or files</button>
+                </>
+              ) : (
+                <>
+                  <button type="button" onClick={() => inputRef.current?.click()} className="w-full bg-teal-700 hover:bg-teal-800 text-white py-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2"><Upload size={17} /> Choose a scan or image</button>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">Tip: open DocMind on your phone to scan with the camera.</p>
+                </>
+              )}
               <input ref={cameraRef} type="file" hidden accept="image/*" capture="environment" onChange={(e) => handleFiles(e.target.files)} />
             </div>
           )}
