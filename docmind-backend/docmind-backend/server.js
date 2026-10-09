@@ -39,6 +39,7 @@ app.get("/api/health", (req, res) => res.json({ status: "ok", time: new Date().t
 
 app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/share", require("./routes/share")); // public, token-protected
 app.use("/api/contacts", contactRoutes);
 app.use("/api/reminders", reminderRoutes);
 app.use("/api/search", searchRoutes);

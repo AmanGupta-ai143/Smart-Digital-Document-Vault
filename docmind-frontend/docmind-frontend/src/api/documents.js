@@ -21,6 +21,19 @@ export async function getDocument(id) {
   return data.document;
 }
 
+export async function createShare(id, expiresIn) {
+  return apiRequest(`/documents/${id}/share`, { method: "POST", body: { expiresIn } });
+}
+
+export async function listShares(id) {
+  const data = await apiRequest(`/documents/${id}/shares`);
+  return data.shares;
+}
+
+export async function revokeShare(id, shareId) {
+  return apiRequest(`/documents/${id}/shares/${shareId}`, { method: "DELETE" });
+}
+
 export async function getFileAccess(id) {
   // The server checks you own the document, then returns a link to open the file.
   const data = await apiRequest(`/documents/${id}/access`);

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Sparkles, Star, BadgeCheck, Download, Archive, Bot, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, Sparkles, Star, BadgeCheck, Download, Archive, Bot, FileText, Trash2, Share2 } from "lucide-react";
 import { CATEGORY_META, FILE_ICON } from "../lib/constants.js";
 import { fmtDate, fmtBytes } from "../lib/format.js";
 import { Badge, Spinner, ErrorState, Modal } from "../components/ui.jsx";
+import ShareModal from "../components/ShareModal.jsx";
 import PdfViewer from "../components/PdfViewer.jsx";
 import * as docsApi from "../api/documents.js";
 import { useToast } from "../context/ToastContext.jsx";
@@ -25,6 +26,7 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
   useEffect(load, [docId]);
 
   // Files are private: ask the server for a link to open this document.
+  const [showShare, setShowShare] = useState(false);
   const [fileUrl, setFileUrl] = useState(null);
   useEffect(() => {
     let alive = true;
@@ -195,6 +197,8 @@ export default function DocumentDetail({ docId, onBack, setPage, setAssistantDoc
             <button onClick={() => update({ isImportant: !doc.isImportant })} className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60">
               <BadgeCheck size={14} /> {doc.isImportant ? "Marked Important" : "Mark Important"}
             </button>
+            <button onClick={() => setShowShare(true)} className="flex items-center gap-1.5 text-sm border border-teal-200 text-teal-800 bg-teal-50 hover:bg-teal-100 px-3 py-2 rounded-lg dark:border-teal-900 dark:bg-teal-900/20 dark:text-teal-300"><Share2 size={14} /> Share</button>
+            {showShare && <ShareModal doc={doc} onClose={() => setShowShare(false)} />}
             <a href={fileHref} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60"><Download size={14} /> Download</a>
             <button onClick={() => update({ isArchived: !doc.isArchived })} className="flex items-center gap-1.5 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800/60">
               <Archive size={14} /> {doc.isArchived ? "Unarchive" : "Archive"}

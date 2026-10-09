@@ -6,6 +6,7 @@ import { useDocuments } from "./hooks/useDocuments.js";
 
 import Landing from "./pages/Landing.jsx";
 import LoginPage from "./pages/Login.jsx";
+import SharedView from "./pages/SharedView.jsx";
 import SignupPage from "./pages/Signup.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import MyDocuments from "./pages/Documents.jsx";
@@ -29,7 +30,7 @@ import Onboarding from "./components/Onboarding.jsx";
 import { Spinner } from "./components/ui.jsx";
 import { getStorage } from "./api/resources.js";
 
-export default function App() {
+function AppMain() {
   const { user, status, logout } = useAuth();
   const [authView, setAuthView] = useState("landing"); // landing | login | signup
   const [page, setPage] = useState("dashboard");
@@ -134,4 +135,11 @@ export default function App() {
       {drawer && <MobileDrawer page={page === "documentDetail" ? "documents" : page} setPage={setPage} onClose={() => setDrawer(false)} onLogout={logout} user={user} />}
     </div>
   );
+}
+
+// Share links look like  https://your-site/#/share/<token>  and need no login.
+export default function App() {
+  const match = typeof window !== "undefined" ? window.location.hash.match(/^#\/share\/([a-f0-9]+)/i) : null;
+  if (match) return <SharedView token={match[1]} />;
+  return <AppMain />;
 }

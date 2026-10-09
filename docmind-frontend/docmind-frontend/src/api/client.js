@@ -1,4 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+export const API_BASE = API_URL;
 
 const TOKEN_KEY = "docmind_access_token";
 const REFRESH_KEY = "docmind_refresh_token";

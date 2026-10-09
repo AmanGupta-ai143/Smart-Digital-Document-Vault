@@ -2,6 +2,7 @@ const express = require("express");
 const { requireAuth } = require("../middleware/auth");
 const upload = require("../middleware/upload");
 const Document = require("../models/Document");
+const ShareLink = require("../models/ShareLink");
 const Reminder = require("../models/Reminder");
 const User = require("../models/User");
 const { uploadBuffer, deleteFile, signedUrl } = require("../config/cloudStorage");
@@ -138,6 +139,49 @@ router.get("/", async (req, res, next) => {
  * GET /api/documents/:id/access — hands the owner a link to open their own file.
  * The ownership check happens here, so the storage address is never listed publicly.
  */
+const SHARE_DURATIONS = { "1h": 60 * 60 * 1000, "24h": 24 * 60 * 60 * 1000, "7d": 7 * 24 * 60 * 60 * 1000 };
+
+/** POST /api/documents/:id/share — creates a time-limited link anyone can open. */
+router.post("/:id/share", async (req, res, next) => {
+  try {
+    const doc = await Document.findOne({ _id: req.params.id, userId: req.user._id, isDeleted: false });
+    if (!doc) return res.status(404).json({ message: "Document not found." });
+    const ms = SHARE_DURATIONS[req.body.expiresIn] || SHARE_DURATIONS["24h"];
+
+    const token = require("crypto").randomBytes(24).toString("hex");
+    const link = await ShareLink.create({
+      userId: req.user._id,
+      documentId: doc._id,
+      tokenHash: require("crypto").createHash("sha256").update(token).digest("hex"),
+      expiresAt: new Date(Date.now() + ms),
+    });
+    await logActivity(req.user._id, "document_shared", `Created a share link for ${doc.fileName}`, { relatedDocumentId: doc._id });
+    res.status(201).json({ id: link._id, url: `${process.env.CLIENT_URL}/#/share/${token}`, expiresAt: link.expiresAt });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** GET /api/documents/:id/shares — the owner's links that are still active. */
+router.get("/:id/shares", async (req, res, next) => {
+  try {
+    const links = await ShareLink.find({ userId: req.user._id, documentId: req.params.id, revokedAt: null, expiresAt: { $gt: new Date() } }).sort({ createdAt: -1 });
+    res.json({ shares: links.map((l) => ({ _id: l._id, expiresAt: l.expiresAt, viewCount: l.viewCount, createdAt: l.createdAt })) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** DELETE /api/documents/:id/shares/:shareId — stops a link working immediately. */
+router.delete("/:id/shares/:shareId", async (req, res, next) => {
+  try {
+    await ShareLink.updateOne({ _id: req.params.shareId, userId: req.user._id, documentId: req.params.id }, { revokedAt: new Date() });
+    res.json({ message: "Link removed." });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/:id/access", async (req, res, next) => {
   try {
     const doc = await Document.findOne({ _id: req.params.id, userId: req.user._id });
