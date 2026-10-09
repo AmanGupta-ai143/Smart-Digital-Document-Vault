@@ -56,13 +56,21 @@ async function callModel(model, prompt, maxOutputTokens) {
  * back to a lighter model, so a busy moment on Google's side does not break
  * the assistant.
  */
-async function generateJSON(prompt, maxOutputTokens) {
-  const attempts = [
-    { model: MODEL, wait: 0 },
-    { model: MODEL, wait: 1500 },
-    { model: FALLBACK_MODEL, wait: 1000 },
-    { model: FALLBACK_MODEL, wait: 2500 },
-  ];
+async function generateJSON(prompt, maxOutputTokens, { fast = false } = {}) {
+  // "fast" jobs (sorting and summarizing) start on the lighter, quicker model.
+  const attempts = fast
+    ? [
+        { model: FALLBACK_MODEL, wait: 0 },
+        { model: FALLBACK_MODEL, wait: 1000 },
+        { model: MODEL, wait: 500 },
+        { model: MODEL, wait: 2000 },
+      ]
+    : [
+        { model: MODEL, wait: 0 },
+        { model: MODEL, wait: 1500 },
+        { model: FALLBACK_MODEL, wait: 1000 },
+        { model: FALLBACK_MODEL, wait: 2500 },
+      ];
 
   let lastError;
   for (const { model, wait } of attempts) {
@@ -86,13 +94,15 @@ async function generateJSON(prompt, maxOutputTokens) {
  * worth flagging for the user to confirm as reminders.
  */
 async function analyzeDocument(extractedText, fileName) {
+  // The start and end of a document hold nearly everything we need; sending less is faster.
+  const text = extractedText.length > 6000 ? `${extractedText.slice(0, 4500)}\n...\n${extractedText.slice(-1500)}` : extractedText;
   const prompt = `You are analyzing a personal document for a private document-vault app.
 File name: ${fileName}
 Categories to choose from exactly: ${Document.CATEGORIES.join(", ")}
 
 Document text:
 """
-${extractedText.slice(0, 12000)}
+${text}
 """
 
 Respond with ONLY valid JSON matching this shape:
@@ -105,7 +115,7 @@ Respond with ONLY valid JSON matching this shape:
   "detectedDates": [{ "label": "what the date is for", "date": "YYYY-MM-DD" }]
 }`;
 
-  return generateJSON(prompt, 1000);
+  return generateJSON(prompt, 1000, { fast: true });
 }
 
 /**

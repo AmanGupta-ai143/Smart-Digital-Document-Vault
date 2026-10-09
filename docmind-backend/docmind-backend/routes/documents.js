@@ -31,7 +31,11 @@ router.post("/upload", upload.single("file"), async (req, res, next) => {
     if (!req.file) return res.status(400).json({ message: "No file provided." });
 
     const useAI = req.body.autoAnalyze !== "false";
-    const result = await uploadBuffer(req.file.buffer, req.user._id, req.file.originalname);
+    // Storing the file and reading its text are independent, so do both at the same time.
+    const [result, extractedText] = await Promise.all([
+      uploadBuffer(req.file.buffer, req.user._id, req.file.originalname),
+      extractText(req.file.buffer, req.file.mimetype),
+    ]);
 
     const doc = new Document({
       userId: req.user._id,
@@ -48,7 +52,6 @@ router.post("/upload", upload.single("file"), async (req, res, next) => {
       aiProcessingStatus: useAI ? "processing" : "pending",
     });
 
-    const extractedText = await extractText(req.file.buffer, req.file.mimetype);
     doc.extractedText = extractedText;
 
     if (useAI && extractedText.trim().length > 0) {
