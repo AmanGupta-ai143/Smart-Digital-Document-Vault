@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FileText, ArrowLeft, Eye, EyeOff, Lock, Fingerprint } from "lucide-react";
 import { Seal } from "../components/ui.jsx";
+import AuthShowcase from "../components/AuthShowcase.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
@@ -14,6 +15,7 @@ function AuthLayout({ children }) {
           <Seal size={34}><FileText size={16} /></Seal>
           <span className="font-serif text-lg">DocMind AI</span>
         </div>
+        <AuthShowcase />
         <div>
           <h2 className="font-serif text-3xl leading-tight mb-3">One vault.<br />Every authorized device.</h2>
           <p className="text-slate-400 text-sm max-w-xs dark:text-slate-500">Your documents and contacts sync securely the moment you sign in — phone, laptop, or desktop.</p>
