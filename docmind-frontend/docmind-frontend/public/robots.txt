@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://smart-digital-document-vault-qmxn.vercel.app/sitemap.xml
